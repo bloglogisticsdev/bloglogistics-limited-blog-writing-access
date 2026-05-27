@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows Editors, Authors, and Contributors to create blog posts, but prevents media access, uploads, and publishing. Subscribers and other non-writing users are redirected away from wp-admin.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.1' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.2' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
@@ -28,13 +28,18 @@ $bloglogistics_lbwa_puc = BLOGLOGISTICS_LBWA_DIR . 'vendor/plugin-update-checker
 
 if ( file_exists( $bloglogistics_lbwa_puc ) ) {
     require_once $bloglogistics_lbwa_puc;
-    require_once BLOGLOGISTICS_LBWA_DIR . 'includes/class-bloglogistics-github-plugin-updater.php';
 
-    BlogLogistics_GitHub_Plugin_Updater::init( [
-        'repo_url'    => BLOGLOGISTICS_LBWA_REPO_URL,
-        'plugin_file' => BLOGLOGISTICS_LBWA_FILE,
-        'slug'        => BLOGLOGISTICS_LBWA_SLUG,
-    ] );
+    if ( ! class_exists( 'BlogLogistics_GitHub_Plugin_Updater', false ) ) {
+        require_once BLOGLOGISTICS_LBWA_DIR . 'includes/class-bloglogistics-github-plugin-updater.php';
+    }
+
+    if ( class_exists( 'BlogLogistics_GitHub_Plugin_Updater', false ) ) {
+        BlogLogistics_GitHub_Plugin_Updater::init( [
+            'repo_url'    => BLOGLOGISTICS_LBWA_REPO_URL,
+            'plugin_file' => BLOGLOGISTICS_LBWA_FILE,
+            'slug'        => BLOGLOGISTICS_LBWA_SLUG,
+        ] );
+    }
 }
 
 /**

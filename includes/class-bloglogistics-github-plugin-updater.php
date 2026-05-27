@@ -2,7 +2,7 @@
 /**
  * Standard GitHub updater for BlogLogistics plugins.
  *
- * @package BlogLogistics_Limited_Blog_Writing_Access
+ * @package BlogLogistics_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -11,32 +11,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
-final class BlogLogistics_GitHub_Plugin_Updater {
+if ( ! class_exists( 'BlogLogistics_GitHub_Plugin_Updater', false ) ) {
 
-    /**
-     * Initialise GitHub-based plugin updates.
-     *
-     * @param array<string, string> $args Updater arguments.
-     */
-    public static function init( array $args ): void {
-        if (
-            empty( $args['repo_url'] ) ||
-            empty( $args['plugin_file'] ) ||
-            empty( $args['slug'] )
-        ) {
-            return;
+    final class BlogLogistics_GitHub_Plugin_Updater {
+
+        /**
+         * Initialise GitHub-based plugin updates.
+         *
+         * @param array<string, string> $args Updater arguments.
+         */
+        public static function init( array $args ): void {
+            if (
+                empty( $args['repo_url'] ) ||
+                empty( $args['plugin_file'] ) ||
+                empty( $args['slug'] )
+            ) {
+                return;
+            }
+
+            if ( ! class_exists( PucFactory::class ) ) {
+                return;
+            }
+
+            $update_checker = PucFactory::buildUpdateChecker(
+                $args['repo_url'],
+                $args['plugin_file'],
+                $args['slug']
+            );
+
+            $update_checker->getVcsApi()->enableReleaseAssets( '/\.zip($|[?&#])/i' );
         }
-
-        if ( ! class_exists( PucFactory::class ) ) {
-            return;
-        }
-
-        $update_checker = PucFactory::buildUpdateChecker(
-            $args['repo_url'],
-            $args['plugin_file'],
-            $args['slug']
-        );
-
-        $update_checker->getVcsApi()->enableReleaseAssets( '/\.zip($|[?&#])/i' );
     }
 }
