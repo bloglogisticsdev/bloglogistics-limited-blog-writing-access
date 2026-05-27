@@ -4,7 +4,7 @@ Tags: users, roles, capabilities, posts, media
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -21,6 +21,9 @@ BlogLogistics Limited Blog Writing Access allows Editors, Authors, and Contribut
 3. Test with Administrator, Editor, Author, Contributor, and Subscriber accounts before using as full production.
 
 == Changelog ==
+
+= 1.0.1 =
+* Test GitHub release update detection.
 
 = 1.0.0 =
 * Initial GitHub-updatable standardized release.

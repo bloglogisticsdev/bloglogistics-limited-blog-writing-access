@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows Editors, Authors, and Contributors to create blog posts, but prevents media access, uploads, and publishing. Subscribers and other non-writing users are redirected away from wp-admin.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.0' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.1' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
