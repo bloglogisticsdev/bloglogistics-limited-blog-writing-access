@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.
- * Version:           1.0.6
+ * Version:           1.0.7
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.6' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.7' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
@@ -230,6 +230,70 @@ function bloglogistics_lbwa_remove_add_media_button_for_limited_writers(): void 
 add_action( 'admin_head', 'bloglogistics_lbwa_remove_add_media_button_for_limited_writers' );
 
 /**
+ * Remove Featured Image UI entry points for limited writers.
+ */
+function bloglogistics_lbwa_remove_featured_image_ui_for_limited_writers(): void {
+	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
+		return;
+	}
+
+	remove_meta_box( 'postimagediv', 'post', 'side' );
+
+	if ( function_exists( 'remove_post_type_support' ) ) {
+		remove_post_type_support( 'post', 'thumbnail' );
+	}
+}
+add_action( 'do_meta_boxes', 'bloglogistics_lbwa_remove_featured_image_ui_for_limited_writers', 99 );
+add_action( 'admin_init', 'bloglogistics_lbwa_remove_featured_image_ui_for_limited_writers', 99 );
+
+/**
+ * Prevent limited writers from adding or changing Featured Image metadata.
+ *
+ * @param mixed  $check      Whether to allow metadata update to continue.
+ * @param int    $object_id  Post ID.
+ * @param string $meta_key   Metadata key.
+ * @return mixed
+ */
+function bloglogistics_lbwa_block_featured_image_metadata_for_limited_writers( $check, int $object_id, string $meta_key ) {
+	if ( '_thumbnail_id' !== $meta_key ) {
+		return $check;
+	}
+
+	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
+		return $check;
+	}
+
+	if ( 'post' !== get_post_type( $object_id ) ) {
+		return $check;
+	}
+
+	return true;
+}
+add_filter( 'add_post_metadata', 'bloglogistics_lbwa_block_featured_image_metadata_for_limited_writers', 10, 3 );
+add_filter( 'update_post_metadata', 'bloglogistics_lbwa_block_featured_image_metadata_for_limited_writers', 10, 3 );
+
+/**
+ * Remove Featured Images that limited writers manage to submit through REST,
+ * quick edit, classic editor fallbacks, or another plugin.
+ */
+function bloglogistics_lbwa_remove_featured_image_on_limited_writer_save( int $post_id ): void {
+	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
+		return;
+	}
+
+	if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
+		return;
+	}
+
+	if ( 'post' !== get_post_type( $post_id ) ) {
+		return;
+	}
+
+	delete_post_meta( $post_id, '_thumbnail_id' );
+}
+add_action( 'save_post_post', 'bloglogistics_lbwa_remove_featured_image_on_limited_writer_save', 99 );
+
+/**
  * Block names that limited writers cannot insert or save.
  *
  * @return string[]
@@ -243,6 +307,8 @@ function bloglogistics_lbwa_blocked_media_blocks(): array {
 		'core/gallery',
 		'core/image',
 		'core/media-text',
+		'core/post-featured-image',
+		'core/site-logo',
 		'core/video',
 	);
 }
@@ -417,11 +483,19 @@ function bloglogistics_lbwa_enqueue_block_editor_restrictions(): void {
 				wp.blocks.unregisterBlockType( blockName );
 			}
 		} );
+
+		if ( wp.plugins && wp.plugins.unregisterPlugin ) {
+			wp.plugins.unregisterPlugin( 'editor-post-featured-image' );
+		}
 	} );
 })( window.wp );
 ";
 
 	wp_add_inline_script( 'wp-blocks', $script, 'after' );
+	wp_add_inline_style(
+		'wp-edit-blocks',
+		'.editor-post-featured-image, .editor-post-featured-image__container, .components-panel__body:has(.editor-post-featured-image) { display: none !important; }'
+	);
 }
 add_action( 'enqueue_block_editor_assets', 'bloglogistics_lbwa_enqueue_block_editor_restrictions' );
 
@@ -450,7 +524,7 @@ function bloglogistics_lbwa_admin_restriction_summary(): array {
 		__( 'Editors, Authors, and Contributors can create and edit blog articles only.', 'bloglogistics-limited-blog-writing-access' ),
 		__( 'Media uploads are blocked for limited writers.', 'bloglogistics-limited-blog-writing-access' ),
 		__( 'Media Library access is blocked for limited writers.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Image and media insertion through editor blocks, embeds, and Insert from URL workarounds is blocked and stripped on save.', 'bloglogistics-limited-blog-writing-access' ),
+		__( 'Image and media insertion through editor blocks, embeds, Featured Image, Site Logo, and Insert from URL workarounds is blocked and stripped on save.', 'bloglogistics-limited-blog-writing-access' ),
 		__( 'Publishing is blocked for limited writers.', 'bloglogistics-limited-blog-writing-access' ),
 		__( 'Limited writer content can only remain Draft or Pending Review.', 'bloglogistics-limited-blog-writing-access' ),
 		__( 'Subscribers and other non-approved users are redirected away from wp-admin.', 'bloglogistics-limited-blog-writing-access' ),
@@ -523,7 +597,7 @@ function bloglogistics_lbwa_render_dashboard_widget(): void {
 	<p><?php esc_html_e( 'This site is limiting blog-writing access for Editors, Authors, and Contributors.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
 	<ul style="list-style: disc; padding-left: 1.5em;">
 		<li><?php esc_html_e( 'No uploads or Media Library access for limited writers.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
-		<li><?php esc_html_e( 'No image or media insertion workarounds, including Insert from URL.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
+		<li><?php esc_html_e( 'No image or media insertion workarounds, including Featured Image, Site Logo, and Insert from URL.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
 		<li><?php esc_html_e( 'No publishing, only Draft or Pending Review.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
 	</ul>
 	<p><a class="button" href="<?php echo esc_url( $restrictions_url ); ?>"><?php esc_html_e( 'View all restrictions', 'bloglogistics-limited-blog-writing-access' ); ?></a></p>
