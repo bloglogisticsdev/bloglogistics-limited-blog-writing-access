@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -25,8 +25,10 @@ The plugin is intended for sites where some users need to draft or submit blog p
 * Blocks direct access to Media Library and media upload screens.
 * Removes the Media menu from wp-admin for limited writers.
 * Removes the Add Media button from the post editor for limited writers.
+* Blocks image and media insertion workarounds, including Insert from URL, media blocks, embeds, and direct media HTML.
 * Forces attempted published posts from limited writers to Pending Review.
 * Includes runtime capability enforcement in case another plugin restores restricted capabilities.
+* Adds an administrator-only Settings page, Plugins screen link, and Dashboard widget explaining the active restrictions.
 * Includes GitHub release-based update support.
 
 == Installation ==
@@ -38,7 +40,7 @@ The plugin is intended for sites where some users need to draft or submit blog p
 
 == Usage ==
 
-After activation, Editors, Authors, and Contributors can access wp-admin to create and edit posts, but cannot upload media or publish content.
+After activation, Editors, Authors, and Contributors can access wp-admin to create and edit posts, but cannot upload media, access the Media Library, insert media through URL workarounds, or publish content.
 
 Administrators keep full access.
 
@@ -56,7 +58,7 @@ Yes. Users with the manage_options capability keep full wp-admin access.
 
 = Can limited writers upload media? =
 
-No. The plugin removes upload capabilities, blocks media screens, removes the Media menu, and removes the Add Media button.
+No. The plugin removes upload capabilities, blocks media screens, removes the Media menu, removes the Add Media button, removes media blocks from the editor, and strips media markup from saved limited-writer content.
 
 = Can limited writers publish posts? =
 
@@ -67,6 +69,10 @@ No. If a limited writer somehow attempts to publish a post, the plugin forces th
 Yes. On activation, it removes selected publishing and media capabilities from Editors, Authors, and Contributors. It also enforces these restrictions at runtime.
 
 == Changelog ==
+
+= 1.0.6 =
+* Block image and media insertion workarounds for limited writers, including Insert from URL, media blocks, embeds, and direct media HTML.
+* Add an administrator-only Settings page, Plugins screen link, and Dashboard widget explaining the restrictions currently enforced by the plugin.
 
 = 1.0.5 =
 * Automate update manifest generation and upload from GitHub Actions.
@@ -93,6 +99,9 @@ Yes. On activation, it removes selected publishing and media capabilities from E
 * Initial GitHub-updatable release.
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Blocks media insertion workarounds and adds administrator visibility for active restrictions.
 
 = 1.0.4 =
 Switches update checks to the BlogLogistics update manifest endpoint.
