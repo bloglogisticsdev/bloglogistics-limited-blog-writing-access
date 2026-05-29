@@ -1,6 +1,6 @@
 <?php
 /**
- * GitHub updater for BlogLogistics Limited Blog Writing Access.
+ * Manifest updater for BlogLogistics Limited Blog Writing Access.
  *
  * @package BlogLogistics_Limited_Blog_Writing_Access
  */
@@ -11,12 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
-if ( ! class_exists( 'BlogLogistics_Limited_Blog_Writing_Access_GitHub_Updater', false ) ) {
+if ( ! class_exists( 'BlogLogistics_Limited_Blog_Writing_Access_Updater', false ) ) {
 
-	final class BlogLogistics_Limited_Blog_Writing_Access_GitHub_Updater {
+	final class BlogLogistics_Limited_Blog_Writing_Access_Updater {
 
 		/**
-		 * Initialise GitHub-based plugin updates.
+		 * Initialise manifest-based plugin updates.
 		 *
 		 * @param array<string, string> $args Updater arguments.
 		 */
@@ -33,13 +33,11 @@ if ( ! class_exists( 'BlogLogistics_Limited_Blog_Writing_Access_GitHub_Updater',
 				return;
 			}
 
-			$update_checker = PucFactory::buildUpdateChecker(
+			PucFactory::buildUpdateChecker(
 				$args['repo_url'],
 				$args['plugin_file'],
 				$args['slug']
 			);
-
-			$update_checker->getVcsApi()->enableReleaseAssets( '/\.zip($|[?&#])/i' );
 		}
 	}
 }

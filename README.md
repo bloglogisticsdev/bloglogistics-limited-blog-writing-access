@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -68,6 +68,11 @@ Yes. On activation, it removes selected publishing and media capabilities from E
 
 == Changelog ==
 
+= 1.0.4 =
+* Switch update checks to the BlogLogistics update manifest endpoint.
+* Avoid GitHub API update checks to reduce rate-limit errors.
+* Rename updater wrapper from GitHub-specific naming to manifest-style naming.
+
 = 1.0.3 =
 * Rename updater wrapper class to BlogLogistics_Limited_Blog_Writing_Access_GitHub_Updater.
 * Prevent Plugin Update Checker from loading more than once when multiple BlogLogistics plugins are active.
@@ -85,8 +90,8 @@ Yes. On activation, it removes selected publishing and media capabilities from E
 
 == Upgrade Notice ==
 
-= 1.0.3 =
-Fixes updater conflicts when multiple BlogLogistics plugins are active.
+= 1.0.4 =
+Switches update checks to the BlogLogistics update manifest endpoint.
 
 == License ==
 

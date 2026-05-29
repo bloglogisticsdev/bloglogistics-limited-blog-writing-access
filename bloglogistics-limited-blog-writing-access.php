@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.
- * Version:           1.0.3
+ * Version:           1.0.4
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,11 +18,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.3' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.4' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BLOGLOGISTICS_LBWA_REPO_URL', 'https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access/' );
+define( 'BLOGLOGISTICS_LBWA_UPDATE_MANIFEST_URL', 'https://updates.bloglogistics.com/plugins/bloglogistics-limited-blog-writing-access.json' );
 
 $bloglogistics_lbwa_puc = BLOGLOGISTICS_LBWA_DIR . 'vendor/plugin-update-checker/plugin-update-checker.php';
 
@@ -31,12 +32,12 @@ if ( file_exists( $bloglogistics_lbwa_puc ) ) {
 		require_once $bloglogistics_lbwa_puc;
 	}
 
-	require_once BLOGLOGISTICS_LBWA_DIR . 'includes/class-bloglogistics-limited-blog-writing-access-github-updater.php';
+	require_once BLOGLOGISTICS_LBWA_DIR . 'includes/class-bloglogistics-limited-blog-writing-access-updater.php';
 
-	if ( class_exists( 'BlogLogistics_Limited_Blog_Writing_Access_GitHub_Updater', false ) ) {
-		BlogLogistics_Limited_Blog_Writing_Access_GitHub_Updater::init(
+	if ( class_exists( 'BlogLogistics_Limited_Blog_Writing_Access_Updater', false ) ) {
+		BlogLogistics_Limited_Blog_Writing_Access_Updater::init(
 			array(
-				'repo_url'    => BLOGLOGISTICS_LBWA_REPO_URL,
+				'repo_url'    => BLOGLOGISTICS_LBWA_UPDATE_MANIFEST_URL,
 				'plugin_file' => BLOGLOGISTICS_LBWA_FILE,
 				'slug'        => BLOGLOGISTICS_LBWA_SLUG,
 			)
