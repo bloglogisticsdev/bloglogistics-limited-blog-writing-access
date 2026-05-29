@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -67,6 +67,10 @@ No. If a limited writer somehow attempts to publish a post, the plugin forces th
 Yes. On activation, it removes selected publishing and media capabilities from Editors, Authors, and Contributors. It also enforces these restrictions at runtime.
 
 == Changelog ==
+
+= 1.0.5 =
+* Automate update manifest generation and upload from GitHub Actions.
+* Generate the update manifest changelog from readme.txt so WordPress displays the full changelog.
 
 = 1.0.4 =
 * Switch update checks to the BlogLogistics update manifest endpoint.
