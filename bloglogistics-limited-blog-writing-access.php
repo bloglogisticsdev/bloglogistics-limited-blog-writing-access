@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.0' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.1' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
@@ -185,10 +185,6 @@ function bloglogistics_lbwa_apply_limited_writer_capabilities(): void {
 		'upload_files',
 		'publish_posts',
 		'publish_pages',
-		'edit_published_posts',
-		'edit_published_pages',
-		'delete_published_posts',
-		'delete_published_pages',
 	);
 
 	foreach ( bloglogistics_lbwa_limited_writer_roles() as $role_name ) {
@@ -259,14 +255,10 @@ function bloglogistics_lbwa_block_limited_writer_caps( array $allcaps, array $ca
 		return $allcaps;
 	}
 
-	$blocked_caps = array(
+	$caps_to_remove = array(
 		'upload_files',
 		'publish_posts',
 		'publish_pages',
-		'edit_published_posts',
-		'edit_published_pages',
-		'delete_published_posts',
-		'delete_published_pages',
 	);
 
 	foreach ( $blocked_caps as $cap ) {
@@ -377,19 +369,85 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 	?>
 	<style>
 		.editor-post-featured-image,
+		.editor-post-featured-image__container,
+		.editor-post-featured-image__preview,
 		.components-button.editor-post-featured-image__toggle,
+		.components-button.editor-post-featured-image__preview,
+		.components-panel__body.edit-post-post-featured-image,
+		.components-panel__body:has(.editor-post-featured-image),
+		button[aria-label="Set featured image"],
+		button[aria-label="Featured image"],
 		.block-editor-media-placeholder,
+		.block-editor-media-replace-flow,
 		.block-editor-block-types-list__item[aria-label*="Image"],
 		.block-editor-block-types-list__item[aria-label*="Gallery"],
 		.block-editor-block-types-list__item[aria-label*="Audio"],
 		.block-editor-block-types-list__item[aria-label*="Video"],
-		.block-editor-block-types-list__item[aria-label*="Media"] {
+		.block-editor-block-types-list__item[aria-label*="Media"],
+		.block-editor-block-types-list__item[aria-label*="Cover"],
+		.block-editor-block-types-list__item[aria-label*="Site Logo"],
+		.block-editor-block-types-list__item[aria-label*="Logo"] {
 			display: none !important;
 		}
 	</style>
 	<script>
-		window.wp = window.wp || {};
-		window.bloglogisticsLimitedBlogWritingAccess = true;
+		(function() {
+			var blockedBlocks = [
+				'core/image',
+				'core/gallery',
+				'core/audio',
+				'core/video',
+				'core/file',
+				'core/media-text',
+				'core/embed',
+				'core/html',
+				'core/cover',
+				'core/site-logo'
+			];
+
+			function removeMediaUi() {
+				var selectors = [
+					'.editor-post-featured-image',
+					'.editor-post-featured-image__container',
+					'.components-panel__body.edit-post-post-featured-image',
+					'button[aria-label="Set featured image"]',
+					'button[aria-label="Featured image"]',
+					'.block-editor-media-placeholder',
+					'.block-editor-media-replace-flow'
+				];
+
+				selectors.forEach(function(selector) {
+					document.querySelectorAll(selector).forEach(function(element) {
+						element.style.display = 'none';
+					});
+				});
+			}
+
+			function unregisterBlockedBlocks() {
+				if (!window.wp || !window.wp.blocks || !window.wp.blocks.unregisterBlockType) {
+					return;
+				}
+
+				blockedBlocks.forEach(function(blockName) {
+					if (window.wp.blocks.getBlockType(blockName)) {
+						window.wp.blocks.unregisterBlockType(blockName);
+					}
+				});
+			}
+
+			if (window.wp && window.wp.domReady) {
+				window.wp.domReady(function() {
+					unregisterBlockedBlocks();
+					removeMediaUi();
+					window.setInterval(removeMediaUi, 1000);
+				});
+			} else {
+				document.addEventListener('DOMContentLoaded', function() {
+					removeMediaUi();
+					window.setInterval(removeMediaUi, 1000);
+				});
+			}
+		}());
 	</script>
 	<?php
 }
@@ -420,6 +478,8 @@ function bloglogistics_lbwa_allowed_block_types( $allowed_block_types ) {
 		'core/media-text',
 		'core/embed',
 		'core/html',
+		'core/cover',
+		'core/site-logo',
 	);
 
 	if ( true === $allowed_block_types || ! is_array( $allowed_block_types ) ) {
@@ -435,8 +495,8 @@ add_filter( 'allowed_block_types_all', 'bloglogistics_lbwa_allowed_block_types' 
  * Remove media HTML and common media blocks from post content.
  */
 function bloglogistics_lbwa_strip_media_from_content( string $content ): string {
-	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed)[\s\S]*?\/wp:\1\s+-->#i', '', $content ) ?? $content;
-	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed)[^>]*?\/\s+-->#i', '', $content ) ?? $content;
+	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed|cover|site-logo)[\s\S]*?\/wp:\1\s+-->#i', '', $content ) ?? $content;
+	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed|cover|site-logo)[^>]*?\/\s+-->#i', '', $content ) ?? $content;
 	$content = preg_replace( '#<(img|picture|source|video|audio|iframe|embed|object)\b[^>]*>.*?</\1>#is', '', $content ) ?? $content;
 	$content = preg_replace( '#<(img|source|embed)\b[^>]*\/?>#is', '', $content ) ?? $content;
 
@@ -650,7 +710,7 @@ function bloglogistics_lbwa_handle_save_settings(): void {
 		bloglogistics_lbwa_restore_builtin_writer_capabilities();
 	}
 
-	wp_safe_redirect( add_query_arg( 'bloglogistics_lbwa_message', 'saved', menu_page_url( 'bloglogistics-limited-blog-writing-access', false ) ) );
+	wp_safe_redirect( admin_url( 'admin.php?page=bloglogistics-limited-blog-writing-access&bloglogistics_lbwa_message=saved' ) );
 	exit;
 }
 add_action( 'admin_post_bloglogistics_lbwa_save_settings', 'bloglogistics_lbwa_handle_save_settings' );
@@ -669,7 +729,7 @@ function bloglogistics_lbwa_handle_restore_defaults(): void {
 	update_option( BLOGLOGISTICS_LBWA_VERSION_OPTION, BLOGLOGISTICS_LBWA_VERSION, false );
 	bloglogistics_lbwa_apply_limited_writer_capabilities();
 
-	wp_safe_redirect( add_query_arg( 'bloglogistics_lbwa_message', 'defaults', menu_page_url( 'bloglogistics-limited-blog-writing-access', false ) ) );
+	wp_safe_redirect( admin_url( 'admin.php?page=bloglogistics-limited-blog-writing-access&bloglogistics_lbwa_message=defaults' ) );
 	exit;
 }
 add_action( 'admin_post_bloglogistics_lbwa_restore_defaults', 'bloglogistics_lbwa_handle_restore_defaults' );

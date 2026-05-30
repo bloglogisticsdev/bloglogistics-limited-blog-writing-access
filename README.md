@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,7 +16,7 @@ BlogLogistics Limited Blog Writing Access allows selected writing roles to acces
 
 The plugin is intended for sites where some users need to draft or submit blog posts, but should not upload media, publish content, or access unrelated admin areas.
 
-Version 1.1.0 adds a settings page under the shared BlogLogistics wp-admin menu so administrators can turn the main protections on or off without editing code.
+Version 1.1.1 fixes settings redirects, preserves normal edit links for limited writers, and improves media-block hiding in the block editor.
 
 == Features ==
 
@@ -92,6 +92,11 @@ The plugin removes its saved settings and version option. It does not delete use
 
 == Changelog ==
 
+= 1.1.1 =
+* Fix settings save and restore redirects so the settings page does not go blank after saving.
+* Keep normal edit links available for limited writers while media and publishing restrictions are enabled.
+* Improve hiding and blocking of Featured Image, Site Logo, Cover, and other media insertion controls.
+
 = 1.1.0 =
 * Add settings under BlogLogistics > Limited Blog Writing Access.
 * Add toggles for wp-admin access protection and media/publishing restrictions.
@@ -125,6 +130,9 @@ The plugin removes its saved settings and version option. It does not delete use
 * Initial GitHub-updatable release.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Fixes settings page redirects, keeps normal edit links available for limited writers, and improves media insertion blocking.
 
 = 1.1.0 =
 Adds settings under BlogLogistics > Limited Blog Writing Access while keeping the existing protections turned on by default.
