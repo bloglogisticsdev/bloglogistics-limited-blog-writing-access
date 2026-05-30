@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.
- * Version:           1.1.3
+ * Version:           1.1.4
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.3' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.4' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
@@ -57,6 +57,7 @@ function bloglogistics_lbwa_default_settings(): array {
 		'limit_admin_access' => true,
 		'limit_media_tools'    => true,
 		'limit_comment_tools'  => true,
+		'limit_nelio_tools'    => true,
 	);
 }
 
@@ -697,6 +698,67 @@ function bloglogistics_lbwa_block_comment_admin_pages(): void {
 }
 add_action( 'admin_init', 'bloglogistics_lbwa_block_comment_admin_pages', 25 );
 
+
+/**
+ * Check whether Nelio Content restrictions should apply to the current user.
+ */
+function bloglogistics_lbwa_should_restrict_nelio_content(): bool {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_nelio_tools' ) ) {
+		return false;
+	}
+
+	if ( current_user_can( 'manage_options' ) ) {
+		return false;
+	}
+
+	return bloglogistics_lbwa_is_limited_writer();
+}
+
+/**
+ * Remove Nelio Content menu items from wp-admin for limited writers.
+ */
+function bloglogistics_lbwa_remove_nelio_content_menus_for_limited_writers(): void {
+	if ( ! bloglogistics_lbwa_should_restrict_nelio_content() ) {
+		return;
+	}
+
+	remove_menu_page( 'nelio-content' );
+	remove_submenu_page( 'nelio-content', 'nelio-content' );
+	remove_submenu_page( 'nelio-content', 'nelio-content-calendar' );
+	remove_submenu_page( 'nelio-content', 'nelio-content-analytics' );
+	remove_submenu_page( 'nelio-content', 'nelio-content-feeds' );
+	remove_submenu_page( 'nelio-content', 'nelio-content-settings' );
+	remove_submenu_page( 'nelio-content', 'nelio-content-account' );
+	remove_submenu_page( 'nelio-content', 'nelio-content-help' );
+
+	remove_submenu_page( 'edit.php', 'nelio-content' );
+	remove_submenu_page( 'edit.php?post_type=post', 'nelio-content' );
+	remove_submenu_page( 'edit.php?post_type=page', 'nelio-content' );
+
+	$post_types = get_post_types( array( 'show_ui' => true ), 'names' );
+	foreach ( $post_types as $post_type ) {
+		remove_submenu_page( 'edit.php?post_type=' . $post_type, 'nelio-content' );
+	}
+}
+add_action( 'admin_menu', 'bloglogistics_lbwa_remove_nelio_content_menus_for_limited_writers', 1000 );
+
+/**
+ * Block direct access to Nelio Content admin pages for limited writers.
+ */
+function bloglogistics_lbwa_block_nelio_content_admin_pages(): void {
+	if ( ! bloglogistics_lbwa_should_restrict_nelio_content() ) {
+		return;
+	}
+
+	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+	if ( '' !== $page && ( 'nelio-content' === $page || str_starts_with( $page, 'nelio-content-' ) ) ) {
+		wp_safe_redirect( admin_url( 'edit.php' ) );
+		exit;
+	}
+}
+add_action( 'admin_init', 'bloglogistics_lbwa_block_nelio_content_admin_pages', 30 );
+
 /**
  * Check whether the shared BlogLogistics parent menu already exists.
  */
@@ -815,6 +877,16 @@ function bloglogistics_lbwa_render_settings_page(): void {
 						<p class="description"><?php echo esc_html__( 'If someone manually enters a comments URL, such as edit-comments.php, they are redirected back to the posts screen instead of seeing or moderating comments.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row"><?php echo esc_html__( 'Hide Nelio Content tools from limited writers', 'bloglogistics-limited-blog-writing-access' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="limit_nelio_tools" value="1" <?php checked( $settings['limit_nelio_tools'] ); ?> />
+							<?php echo esc_html__( 'Remove Nelio Content menu items from wp-admin for limited writers, including the Calendar item under Posts.', 'bloglogistics-limited-blog-writing-access' ); ?>
+						</label>
+						<p class="description"><?php echo esc_html__( 'If someone manually enters a Nelio Content admin URL, they are redirected back to the Posts screen instead of seeing Nelio Content tools.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
+					</td>
+				</tr>
 			</table>
 
 			<p><strong><?php echo esc_html__( 'Recommended defaults:', 'bloglogistics-limited-blog-writing-access' ); ?></strong></p>
@@ -822,6 +894,7 @@ function bloglogistics_lbwa_render_settings_page(): void {
 				<li><?php echo esc_html__( 'Limit wp-admin access: On', 'bloglogistics-limited-blog-writing-access' ); ?></li>
 				<li><?php echo esc_html__( 'Keep limited writers away from media and publishing tools: On', 'bloglogistics-limited-blog-writing-access' ); ?></li>
 				<li><?php echo esc_html__( 'Keep limited writers away from comment moderation: On', 'bloglogistics-limited-blog-writing-access' ); ?></li>
+				<li><?php echo esc_html__( 'Hide Nelio Content tools from limited writers: On', 'bloglogistics-limited-blog-writing-access' ); ?></li>
 			</ul>
 
 			<?php submit_button( __( 'Save Settings', 'bloglogistics-limited-blog-writing-access' ) ); ?>
@@ -831,7 +904,7 @@ function bloglogistics_lbwa_render_settings_page(): void {
 			<?php wp_nonce_field( 'bloglogistics_lbwa_restore_defaults' ); ?>
 			<input type="hidden" name="action" value="bloglogistics_lbwa_restore_defaults" />
 			<?php submit_button( __( 'Restore recommended defaults', 'bloglogistics-limited-blog-writing-access' ), 'secondary', 'submit', false ); ?>
-			<p class="description"><?php echo esc_html__( 'This turns both protections back on.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
+			<p class="description"><?php echo esc_html__( 'This turns all protections back on.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
 		</form>
 	</div>
 	<?php
@@ -851,6 +924,7 @@ function bloglogistics_lbwa_handle_save_settings(): void {
 		'limit_admin_access' => isset( $_POST['limit_admin_access'] ),
 		'limit_media_tools'    => isset( $_POST['limit_media_tools'] ),
 		'limit_comment_tools'  => isset( $_POST['limit_comment_tools'] ),
+		'limit_nelio_tools'    => isset( $_POST['limit_nelio_tools'] ),
 	);
 
 	update_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, $settings, false );

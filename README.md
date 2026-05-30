@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,7 +16,7 @@ BlogLogistics Limited Blog Writing Access allows selected writing roles to acces
 
 The plugin is intended for sites where some users need to draft or submit blog posts, but should not upload media, publish content, or access unrelated admin areas.
 
-Version 1.1.3 adds a configurable comment moderation protection for limited writers.
+Version 1.1.4 adds a configurable Nelio Content protection for limited writers.
 
 == Features ==
 
@@ -29,6 +29,7 @@ Version 1.1.3 adds a configurable comment moderation protection for limited writ
 * Removes the Add Media button from the post editor for limited writers when enabled.
 * Blocks common image and media insertion workarounds when enabled.
 * Removes Comments from wp-admin and blocks direct access to comment moderation screens when enabled.
+* Hides Nelio Content tools and blocks direct access to Nelio Content admin pages when enabled.
 * Forces attempted published posts from limited writers to Pending Review when enabled.
 * Includes runtime capability enforcement in case another plugin restores restricted capabilities.
 * Cleans up plugin settings on uninstall.
@@ -94,6 +95,13 @@ The plugin removes its saved settings and version option. It does not delete use
 
 == Changelog ==
 
+= 1.1.4 =
+* Add setting to hide Nelio Content tools from limited writers.
+* Remove Nelio Content from the wp-admin left sidebar for limited writers.
+* Remove the Nelio Calendar item under Posts for limited writers.
+* Block direct access to Nelio Content admin pages for limited writers.
+* Include the new setting in Restore recommended defaults.
+
 = 1.1.3 =
 * Add a setting to keep limited writers away from comment moderation.
 * Remove Comments from the wp-admin menu when comment moderation protection is enabled.
@@ -143,6 +151,13 @@ The plugin removes its saved settings and version option. It does not delete use
 * Initial GitHub-updatable release.
 
 == Upgrade Notice ==
+
+= 1.1.4 =
+* Add setting to hide Nelio Content tools from limited writers.
+* Remove Nelio Content from the wp-admin left sidebar for limited writers.
+* Remove the Nelio Calendar item under Posts for limited writers.
+* Block direct access to Nelio Content admin pages for limited writers.
+* Include the new setting in Restore recommended defaults.
 
 = 1.1.3 =
 * Add a setting to keep limited writers away from comment moderation.
