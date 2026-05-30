@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.1.4
+Stable tag: 1.1.5
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,7 +16,7 @@ BlogLogistics Limited Blog Writing Access allows selected writing roles to acces
 
 The plugin is intended for sites where some users need to draft or submit blog posts, but should not upload media, publish content, or access unrelated admin areas.
 
-Version 1.1.4 adds a configurable Nelio Content protection for limited writers.
+Version 1.1.5 adds BlogLogistics plugin icon assets and update manifest icon metadata.
 
 == Features ==
 
@@ -95,6 +95,11 @@ The plugin removes its saved settings and version option. It does not delete use
 
 == Changelog ==
 
+= 1.1.5 =
+* Add BlogLogistics plugin icon assets.
+* Add icon metadata to the generated update manifest.
+* Use the shared BlogLogistics update-server icon URLs for WordPress update screens and plugin details.
+
 = 1.1.4 =
 * Add setting to hide Nelio Content tools from limited writers.
 * Remove Nelio Content from the wp-admin left sidebar for limited writers.
@@ -151,6 +156,9 @@ The plugin removes its saved settings and version option. It does not delete use
 * Initial GitHub-updatable release.
 
 == Upgrade Notice ==
+
+= 1.1.5 =
+Adds BlogLogistics plugin icon assets and update manifest icon metadata.
 
 = 1.1.4 =
 * Add setting to hide Nelio Content tools from limited writers.
