@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,7 +16,7 @@ BlogLogistics Limited Blog Writing Access allows selected writing roles to acces
 
 The plugin is intended for sites where some users need to draft or submit blog posts, but should not upload media, publish content, or access unrelated admin areas.
 
-Version 1.1.2 tightens Featured Image and Icon blocking in the editor while preserving normal edit access for limited writers.
+Version 1.1.3 adds a configurable comment moderation protection for limited writers.
 
 == Features ==
 
@@ -28,6 +28,7 @@ Version 1.1.2 tightens Featured Image and Icon blocking in the editor while pres
 * Removes the Media menu from wp-admin for limited writers when enabled.
 * Removes the Add Media button from the post editor for limited writers when enabled.
 * Blocks common image and media insertion workarounds when enabled.
+* Removes Comments from wp-admin and blocks direct access to comment moderation screens when enabled.
 * Forces attempted published posts from limited writers to Pending Review when enabled.
 * Includes runtime capability enforcement in case another plugin restores restricted capabilities.
 * Cleans up plugin settings on uninstall.
@@ -49,10 +50,11 @@ Administrators can manage the settings at:
 
 BlogLogistics > Limited Blog Writing Access
 
-The two main settings are:
+The main settings are:
 
 * Limit wp-admin access for non-administrators.
 * Keep limited writers away from media and publishing tools.
+* Keep limited writers away from comment moderation.
 
 Administrators keep full access.
 
@@ -91,6 +93,12 @@ When the media and publishing protection is turned on, the plugin removes select
 The plugin removes its saved settings and version option. It does not delete users, posts, pages, or site content.
 
 == Changelog ==
+
+= 1.1.3 =
+* Add a setting to keep limited writers away from comment moderation.
+* Remove Comments from the wp-admin menu when comment moderation protection is enabled.
+* Redirect direct comment moderation screen access back to the posts screen.
+* Remove the Comments admin bar node for limited writers when enabled.
 
 = 1.1.2 =
 * Tighten block-editor restrictions for Featured Image and Icon controls.
@@ -135,6 +143,12 @@ The plugin removes its saved settings and version option. It does not delete use
 * Initial GitHub-updatable release.
 
 == Upgrade Notice ==
+
+= 1.1.3 =
+* Add a setting to keep limited writers away from comment moderation.
+* Remove Comments from the wp-admin menu when comment moderation protection is enabled.
+* Redirect direct comment moderation screen access back to the posts screen.
+* Remove the Comments admin bar node for limited writers when enabled.
 
 = 1.1.2 =
 Tightens Featured Image and Icon blocking for limited writers.

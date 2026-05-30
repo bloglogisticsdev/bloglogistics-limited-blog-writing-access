@@ -15,7 +15,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 function bloglogistics_lbwa_uninstall_restore_builtin_writer_capabilities(): void {
 	$editor = get_role( 'editor' );
 	if ( $editor ) {
-		foreach ( array( 'upload_files', 'publish_posts', 'publish_pages', 'edit_published_posts', 'edit_published_pages', 'delete_published_posts', 'delete_published_pages' ) as $cap ) {
+		foreach ( array( 'upload_files', 'publish_posts', 'publish_pages', 'edit_published_posts', 'edit_published_pages', 'delete_published_posts', 'delete_published_pages', 'moderate_comments' ) as $cap ) {
 			$editor->add_cap( $cap );
 		}
 	}
