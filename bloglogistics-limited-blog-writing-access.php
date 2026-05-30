@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.
- * Version:           1.1.1
+ * Version:           1.1.2
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.1' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.2' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
@@ -261,7 +261,7 @@ function bloglogistics_lbwa_block_limited_writer_caps( array $allcaps, array $ca
 		'publish_pages',
 	);
 
-	foreach ( $blocked_caps as $cap ) {
+	foreach ( $caps_to_remove as $cap ) {
 		$allcaps[ $cap ] = false;
 	}
 
@@ -377,6 +377,13 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 		.components-panel__body:has(.editor-post-featured-image),
 		button[aria-label="Set featured image"],
 		button[aria-label="Featured image"],
+		button[aria-label*="Featured image"],
+		button[aria-label*="Set featured image"],
+		button[aria-label*="Icon"],
+		[aria-label*="Featured Image"],
+		[aria-label*="Featured image"],
+		[aria-label*="Site Logo"],
+		[aria-label*="Icon"],
 		.block-editor-media-placeholder,
 		.block-editor-media-replace-flow,
 		.block-editor-block-types-list__item[aria-label*="Image"],
@@ -385,8 +392,14 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 		.block-editor-block-types-list__item[aria-label*="Video"],
 		.block-editor-block-types-list__item[aria-label*="Media"],
 		.block-editor-block-types-list__item[aria-label*="Cover"],
+		.block-editor-block-types-list__item[aria-label*="Featured Image"],
+		.block-editor-block-types-list__item[aria-label*="Featured image"],
 		.block-editor-block-types-list__item[aria-label*="Site Logo"],
-		.block-editor-block-types-list__item[aria-label*="Logo"] {
+		.block-editor-block-types-list__item[aria-label*="Logo"],
+		.block-editor-block-types-list__item[aria-label*="Icon"],
+		.block-editor-block-types-list__item[title*="Icon"],
+		.block-editor-block-types-list__item[title*="Featured Image"],
+		.block-editor-block-types-list__item[title*="Featured image"] {
 			display: none !important;
 		}
 	</style>
@@ -402,7 +415,9 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 				'core/embed',
 				'core/html',
 				'core/cover',
-				'core/site-logo'
+				'core/site-logo',
+				'core/post-featured-image',
+				'core/avatar'
 			];
 
 			function removeMediaUi() {
@@ -411,7 +426,12 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 					'.editor-post-featured-image__container',
 					'.components-panel__body.edit-post-post-featured-image',
 					'button[aria-label="Set featured image"]',
-					'button[aria-label="Featured image"]',
+					''button[aria-label="Featured image"]',
+					'button[aria-label*="Featured image"]',
+					'button[aria-label*="Set featured image"]',
+					'button[aria-label*="Icon"]',
+					'[aria-label*="Icon"]',
+					'[aria-label*="Site Logo"]',
 					'.block-editor-media-placeholder',
 					'.block-editor-media-replace-flow'
 				];
@@ -420,6 +440,14 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 					document.querySelectorAll(selector).forEach(function(element) {
 						element.style.display = 'none';
 					});
+				});
+
+				document.querySelectorAll('.components-panel__body, .interface-complementary-area .components-panel__body, .block-editor-block-types-list__item').forEach(function(element) {
+					var text = String(element.textContent || '').toLowerCase();
+					var label = String(element.getAttribute('aria-label') || '').toLowerCase();
+					if (text.indexOf('featured image') !== -1 || text.indexOf('site logo') !== -1 || text === 'icon' || label.indexOf('featured image') !== -1 || label.indexOf('site logo') !== -1 || label.indexOf('icon') !== -1) {
+						element.style.display = 'none';
+					}
 				});
 			}
 
@@ -433,6 +461,17 @@ function bloglogistics_lbwa_admin_editor_safeguards(): void {
 						window.wp.blocks.unregisterBlockType(blockName);
 					}
 				});
+
+				if (window.wp.blocks.getBlockTypes) {
+					window.wp.blocks.getBlockTypes().forEach(function(blockType) {
+						var title = String(blockType.title || '').toLowerCase();
+						var name = String(blockType.name || '').toLowerCase();
+						var shouldBlock = title.indexOf('featured image') !== -1 || title.indexOf('site logo') !== -1 || title.indexOf('icon') !== -1 || name.indexOf('featured-image') !== -1 || name.indexOf('site-logo') !== -1 || name.indexOf('icon') !== -1;
+						if (shouldBlock && window.wp.blocks.getBlockType(blockType.name)) {
+							window.wp.blocks.unregisterBlockType(blockType.name);
+						}
+					});
+				}
 			}
 
 			if (window.wp && window.wp.domReady) {
@@ -480,14 +519,27 @@ function bloglogistics_lbwa_allowed_block_types( $allowed_block_types ) {
 		'core/html',
 		'core/cover',
 		'core/site-logo',
+		'core/post-featured-image',
+		'core/avatar',
 	);
 
+	$registered = WP_Block_Type_Registry::get_instance()->get_all_registered();
+
 	if ( true === $allowed_block_types || ! is_array( $allowed_block_types ) ) {
-		$registered = WP_Block_Type_Registry::get_instance()->get_all_registered();
 		$allowed_block_types = array_keys( $registered );
 	}
 
-	return array_values( array_diff( $allowed_block_types, $blocked ) );
+	$blocked_by_title = array();
+	foreach ( $registered as $block_name => $block_type ) {
+		$title = isset( $block_type->title ) ? strtolower( (string) $block_type->title ) : '';
+		$name  = strtolower( (string) $block_name );
+
+		if ( str_contains( $title, 'featured image' ) || str_contains( $title, 'site logo' ) || 'icon' === $title || str_contains( $name, 'featured-image' ) || str_contains( $name, 'site-logo' ) || str_contains( $name, 'icon' ) ) {
+			$blocked_by_title[] = $block_name;
+		}
+	}
+
+	return array_values( array_diff( $allowed_block_types, array_merge( $blocked, $blocked_by_title ) ) );
 }
 add_filter( 'allowed_block_types_all', 'bloglogistics_lbwa_allowed_block_types' );
 
@@ -495,8 +547,8 @@ add_filter( 'allowed_block_types_all', 'bloglogistics_lbwa_allowed_block_types' 
  * Remove media HTML and common media blocks from post content.
  */
 function bloglogistics_lbwa_strip_media_from_content( string $content ): string {
-	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed|cover|site-logo)[\s\S]*?\/wp:\1\s+-->#i', '', $content ) ?? $content;
-	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed|cover|site-logo)[^>]*?\/\s+-->#i', '', $content ) ?? $content;
+	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed|cover|site-logo|post-featured-image|avatar)[\s\S]*?\/wp:\1\s+-->#i', '', $content ) ?? $content;
+	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed|cover|site-logo|post-featured-image|avatar)[^>]*?\/\s+-->#i', '', $content ) ?? $content;
 	$content = preg_replace( '#<(img|picture|source|video|audio|iframe|embed|object)\b[^>]*>.*?</\1>#is', '', $content ) ?? $content;
 	$content = preg_replace( '#<(img|source|embed)\b[^>]*\/?>#is', '', $content ) ?? $content;
 
