@@ -3,7 +3,7 @@
  * Plugin Name:       BlogLogistics Limited Blog Writing Access
  * Plugin URI:        https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access
  * Description:       Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.
- * Version:           1.0.7
+ * Version:           1.1.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Author:            BlogLogistics
@@ -18,12 +18,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOGLOGISTICS_LBWA_VERSION', '1.0.7' );
+define( 'BLOGLOGISTICS_LBWA_VERSION', '1.1.0' );
 define( 'BLOGLOGISTICS_LBWA_SLUG', 'bloglogistics-limited-blog-writing-access' );
 define( 'BLOGLOGISTICS_LBWA_FILE', __FILE__ );
 define( 'BLOGLOGISTICS_LBWA_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BLOGLOGISTICS_LBWA_REPO_URL', 'https://github.com/bloglogisticsdev/bloglogistics-limited-blog-writing-access/' );
 define( 'BLOGLOGISTICS_LBWA_UPDATE_MANIFEST_URL', 'https://updates.bloglogistics.com/plugins/bloglogistics-limited-blog-writing-access.json' );
+define( 'BLOGLOGISTICS_LBWA_SETTINGS_OPTION', 'bloglogistics_lbwa_settings' );
+define( 'BLOGLOGISTICS_LBWA_VERSION_OPTION', 'bloglogistics_lbwa_version' );
 
 $bloglogistics_lbwa_puc = BLOGLOGISTICS_LBWA_DIR . 'vendor/plugin-update-checker/plugin-update-checker.php';
 
@@ -44,6 +46,73 @@ if ( file_exists( $bloglogistics_lbwa_puc ) ) {
 		);
 	}
 }
+
+/**
+ * Get recommended default settings.
+ *
+ * @return array<string, bool>
+ */
+function bloglogistics_lbwa_default_settings(): array {
+	return array(
+		'limit_admin_access' => true,
+		'limit_media_tools'  => true,
+	);
+}
+
+/**
+ * Get saved settings merged with defaults.
+ *
+ * @return array<string, bool>
+ */
+function bloglogistics_lbwa_get_settings(): array {
+	$saved = get_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, array() );
+
+	if ( ! is_array( $saved ) ) {
+		$saved = array();
+	}
+
+	return array_merge( bloglogistics_lbwa_default_settings(), array_map( 'boolval', $saved ) );
+}
+
+/**
+ * Check whether a specific setting is enabled.
+ */
+function bloglogistics_lbwa_setting_enabled( string $key ): bool {
+	$settings = bloglogistics_lbwa_get_settings();
+	return ! empty( $settings[ $key ] );
+}
+
+/**
+ * Add default settings and keep existing behaviour active on first install.
+ */
+function bloglogistics_lbwa_activate(): void {
+	if ( false === get_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, false ) ) {
+		add_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, bloglogistics_lbwa_default_settings(), '', false );
+	}
+
+	update_option( BLOGLOGISTICS_LBWA_VERSION_OPTION, BLOGLOGISTICS_LBWA_VERSION, false );
+
+	if ( bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		bloglogistics_lbwa_apply_limited_writer_capabilities();
+	}
+}
+register_activation_hook( __FILE__, 'bloglogistics_lbwa_activate' );
+
+/**
+ * Ensure settings exist after updates from older versions.
+ */
+function bloglogistics_lbwa_maybe_upgrade(): void {
+	if ( false === get_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, false ) ) {
+		add_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, bloglogistics_lbwa_default_settings(), '', false );
+	}
+
+	$stored_version = (string) get_option( BLOGLOGISTICS_LBWA_VERSION_OPTION, '' );
+
+	if ( BLOGLOGISTICS_LBWA_VERSION !== $stored_version ) {
+		update_option( BLOGLOGISTICS_LBWA_VERSION_OPTION, BLOGLOGISTICS_LBWA_VERSION, false );
+	}
+}
+add_action( 'plugins_loaded', 'bloglogistics_lbwa_maybe_upgrade' );
 
 /**
  * Roles that are allowed to access wp-admin for writing posts.
@@ -68,9 +137,13 @@ function bloglogistics_lbwa_is_limited_writer(): bool {
 }
 
 /**
- * Hide the admin bar for everyone except administrators.
+ * Hide the admin bar for everyone except administrators when enabled.
  */
 function bloglogistics_lbwa_disable_admin_bar_for_non_admins(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_admin_access' ) ) {
+		return;
+	}
+
 	if ( ! current_user_can( 'manage_options' ) ) {
 		add_filter( 'show_admin_bar', '__return_false' );
 	}
@@ -79,9 +152,13 @@ add_action( 'after_setup_theme', 'bloglogistics_lbwa_disable_admin_bar_for_non_a
 
 /**
  * Allow admins full wp-admin access, allow limited writers to write posts,
- * and redirect everyone else away from wp-admin.
+ * and redirect everyone else away from wp-admin when enabled.
  */
 function bloglogistics_lbwa_restrict_wp_admin_access(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_admin_access' ) ) {
+		return;
+	}
+
 	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 		return;
 	}
@@ -103,9 +180,7 @@ add_action( 'admin_init', 'bloglogistics_lbwa_restrict_wp_admin_access' );
  * Remove upload, media, and publishing capabilities from Editors, Authors,
  * and Contributors.
  */
-function bloglogistics_lbwa_set_limited_writer_capabilities(): void {
-	$roles = bloglogistics_lbwa_limited_writer_roles();
-
+function bloglogistics_lbwa_apply_limited_writer_capabilities(): void {
 	$caps_to_remove = array(
 		'upload_files',
 		'publish_posts',
@@ -116,7 +191,7 @@ function bloglogistics_lbwa_set_limited_writer_capabilities(): void {
 		'delete_published_pages',
 	);
 
-	foreach ( $roles as $role_name ) {
+	foreach ( bloglogistics_lbwa_limited_writer_roles() as $role_name ) {
 		$role = get_role( $role_name );
 
 		if ( ! $role ) {
@@ -131,7 +206,31 @@ function bloglogistics_lbwa_set_limited_writer_capabilities(): void {
 		$role->add_cap( 'edit_posts' );
 	}
 }
-register_activation_hook( __FILE__, 'bloglogistics_lbwa_set_limited_writer_capabilities' );
+
+/**
+ * Restore normal built-in role capabilities that older versions may have removed.
+ */
+function bloglogistics_lbwa_restore_builtin_writer_capabilities(): void {
+	$editor = get_role( 'editor' );
+	if ( $editor ) {
+		foreach ( array( 'upload_files', 'publish_posts', 'publish_pages', 'edit_published_posts', 'edit_published_pages', 'delete_published_posts', 'delete_published_pages' ) as $cap ) {
+			$editor->add_cap( $cap );
+		}
+	}
+
+	$author = get_role( 'author' );
+	if ( $author ) {
+		foreach ( array( 'upload_files', 'publish_posts', 'edit_published_posts', 'delete_published_posts' ) as $cap ) {
+			$author->add_cap( $cap );
+		}
+	}
+
+	$contributor = get_role( 'contributor' );
+	if ( $contributor ) {
+		$contributor->add_cap( 'read' );
+		$contributor->add_cap( 'edit_posts' );
+	}
+}
 
 /**
  * Runtime enforcement, prevents media upload and publishing even if another
@@ -145,6 +244,10 @@ register_activation_hook( __FILE__, 'bloglogistics_lbwa_set_limited_writer_capab
  */
 function bloglogistics_lbwa_block_limited_writer_caps( array $allcaps, array $caps, array $args, WP_User $user ): array {
 	unset( $caps, $args );
+
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return $allcaps;
+	}
 
 	if ( empty( $user->roles ) ) {
 		return $allcaps;
@@ -175,9 +278,13 @@ function bloglogistics_lbwa_block_limited_writer_caps( array $allcaps, array $ca
 add_filter( 'user_has_cap', 'bloglogistics_lbwa_block_limited_writer_caps', 10, 4 );
 
 /**
- * Block direct access to Media Library and media upload screens.
+ * Block direct access to Media Library, upload, customizer, and related screens.
  */
 function bloglogistics_lbwa_block_media_admin_pages(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return;
+	}
+
 	if ( current_user_can( 'manage_options' ) ) {
 		return;
 	}
@@ -192,6 +299,7 @@ function bloglogistics_lbwa_block_media_admin_pages(): void {
 		'upload.php',
 		'media-new.php',
 		'async-upload.php',
+		'customize.php',
 	);
 
 	if ( in_array( $pagenow, $blocked_pages, true ) ) {
@@ -205,6 +313,10 @@ add_action( 'admin_init', 'bloglogistics_lbwa_block_media_admin_pages', 20 );
  * Remove Media menu from wp-admin.
  */
 function bloglogistics_lbwa_remove_media_menu_for_limited_writers(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return;
+	}
+
 	if ( current_user_can( 'manage_options' ) ) {
 		return;
 	}
@@ -219,6 +331,10 @@ add_action( 'admin_menu', 'bloglogistics_lbwa_remove_media_menu_for_limited_writ
  * Remove Add Media button from the post editor.
  */
 function bloglogistics_lbwa_remove_add_media_button_for_limited_writers(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return;
+	}
+
 	if ( current_user_can( 'manage_options' ) ) {
 		return;
 	}
@@ -230,172 +346,105 @@ function bloglogistics_lbwa_remove_add_media_button_for_limited_writers(): void 
 add_action( 'admin_head', 'bloglogistics_lbwa_remove_add_media_button_for_limited_writers' );
 
 /**
- * Remove Featured Image UI entry points for limited writers.
+ * Remove Featured Image box from editors for limited writers.
  */
-function bloglogistics_lbwa_remove_featured_image_ui_for_limited_writers(): void {
-	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
+function bloglogistics_lbwa_remove_featured_image_box(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
 		return;
 	}
 
-	remove_meta_box( 'postimagediv', 'post', 'side' );
+	if ( current_user_can( 'manage_options' ) || ! bloglogistics_lbwa_is_limited_writer() ) {
+		return;
+	}
 
-	if ( function_exists( 'remove_post_type_support' ) ) {
-		remove_post_type_support( 'post', 'thumbnail' );
+	foreach ( array( 'post', 'page' ) as $post_type ) {
+		remove_meta_box( 'postimagediv', $post_type, 'side' );
 	}
 }
-add_action( 'do_meta_boxes', 'bloglogistics_lbwa_remove_featured_image_ui_for_limited_writers', 99 );
-add_action( 'admin_init', 'bloglogistics_lbwa_remove_featured_image_ui_for_limited_writers', 99 );
+add_action( 'add_meta_boxes', 'bloglogistics_lbwa_remove_featured_image_box', 99 );
 
 /**
- * Prevent limited writers from adding or changing Featured Image metadata.
+ * Add editor-side safeguards to hide image/media insertion controls.
+ */
+function bloglogistics_lbwa_admin_editor_safeguards(): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return;
+	}
+
+	if ( current_user_can( 'manage_options' ) || ! bloglogistics_lbwa_is_limited_writer() ) {
+		return;
+	}
+	?>
+	<style>
+		.editor-post-featured-image,
+		.components-button.editor-post-featured-image__toggle,
+		.block-editor-media-placeholder,
+		.block-editor-block-types-list__item[aria-label*="Image"],
+		.block-editor-block-types-list__item[aria-label*="Gallery"],
+		.block-editor-block-types-list__item[aria-label*="Audio"],
+		.block-editor-block-types-list__item[aria-label*="Video"],
+		.block-editor-block-types-list__item[aria-label*="Media"] {
+			display: none !important;
+		}
+	</style>
+	<script>
+		window.wp = window.wp || {};
+		window.bloglogisticsLimitedBlogWritingAccess = true;
+	</script>
+	<?php
+}
+add_action( 'admin_head-post.php', 'bloglogistics_lbwa_admin_editor_safeguards' );
+add_action( 'admin_head-post-new.php', 'bloglogistics_lbwa_admin_editor_safeguards' );
+
+/**
+ * Remove image/media block types from the block editor for limited writers.
  *
- * @param mixed  $check      Whether to allow metadata update to continue.
- * @param int    $object_id  Post ID.
- * @param string $meta_key   Metadata key.
- * @return mixed
+ * @param array<string, mixed>|bool $allowed_block_types Allowed block types.
+ * @return array<string, mixed>|bool
  */
-function bloglogistics_lbwa_block_featured_image_metadata_for_limited_writers( $check, int $object_id, string $meta_key ) {
-	if ( '_thumbnail_id' !== $meta_key ) {
-		return $check;
+function bloglogistics_lbwa_allowed_block_types( $allowed_block_types ) {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return $allowed_block_types;
 	}
 
-	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
-		return $check;
+	if ( current_user_can( 'manage_options' ) || ! bloglogistics_lbwa_is_limited_writer() ) {
+		return $allowed_block_types;
 	}
 
-	if ( 'post' !== get_post_type( $object_id ) ) {
-		return $check;
-	}
-
-	return true;
-}
-add_filter( 'add_post_metadata', 'bloglogistics_lbwa_block_featured_image_metadata_for_limited_writers', 10, 3 );
-add_filter( 'update_post_metadata', 'bloglogistics_lbwa_block_featured_image_metadata_for_limited_writers', 10, 3 );
-
-/**
- * Remove Featured Images that limited writers manage to submit through REST,
- * quick edit, classic editor fallbacks, or another plugin.
- */
-function bloglogistics_lbwa_remove_featured_image_on_limited_writer_save( int $post_id ): void {
-	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
-		return;
-	}
-
-	if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
-		return;
-	}
-
-	if ( 'post' !== get_post_type( $post_id ) ) {
-		return;
-	}
-
-	delete_post_meta( $post_id, '_thumbnail_id' );
-}
-add_action( 'save_post_post', 'bloglogistics_lbwa_remove_featured_image_on_limited_writer_save', 99 );
-
-/**
- * Block names that limited writers cannot insert or save.
- *
- * @return string[]
- */
-function bloglogistics_lbwa_blocked_media_blocks(): array {
-	return array(
-		'core/audio',
-		'core/cover',
-		'core/embed',
-		'core/file',
-		'core/gallery',
+	$blocked = array(
 		'core/image',
-		'core/media-text',
-		'core/post-featured-image',
-		'core/site-logo',
+		'core/gallery',
+		'core/audio',
 		'core/video',
-	);
-}
-
-/**
- * Determine whether current restrictions should apply to the active user.
- */
-function bloglogistics_lbwa_should_restrict_current_user(): bool {
-	if ( current_user_can( 'manage_options' ) ) {
-		return false;
-	}
-
-	return bloglogistics_lbwa_is_limited_writer();
-}
-
-/**
- * Remove media blocks from parsed block content recursively.
- *
- * @param array<int, array<string, mixed>> $blocks Parsed blocks.
- * @return array<int, array<string, mixed>>
- */
-function bloglogistics_lbwa_remove_media_blocks_from_parsed_blocks( array $blocks ): array {
-	$blocked_blocks = bloglogistics_lbwa_blocked_media_blocks();
-	$clean_blocks    = array();
-
-	foreach ( $blocks as $block ) {
-		if ( ! is_array( $block ) ) {
-			continue;
-		}
-
-		$block_name = isset( $block['blockName'] ) && is_string( $block['blockName'] ) ? $block['blockName'] : null;
-
-		if ( null !== $block_name && in_array( $block_name, $blocked_blocks, true ) ) {
-			continue;
-		}
-
-		if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
-			$block['innerBlocks'] = bloglogistics_lbwa_remove_media_blocks_from_parsed_blocks( $block['innerBlocks'] );
-		}
-
-		$clean_blocks[] = $block;
-	}
-
-	return $clean_blocks;
-}
-
-/**
- * Remove direct media HTML from post content.
- */
-function bloglogistics_lbwa_strip_media_html( string $content ): string {
-	$patterns = array(
-		'#<picture\b[^>]*>.*?</picture>#is',
-		'#<video\b[^>]*>.*?</video>#is',
-		'#<audio\b[^>]*>.*?</audio>#is',
-		'#<iframe\b[^>]*>.*?</iframe>#is',
-		'#<object\b[^>]*>.*?</object>#is',
-		'#<embed\b[^>]*>.*?</embed>#is',
-		'#<embed\b[^>]*?/?>#is',
-		'#<img\b[^>]*?/?>#is',
-		'#<source\b[^>]*?/?>#is',
-		'#<track\b[^>]*?/?>#is',
+		'core/file',
+		'core/media-text',
+		'core/embed',
+		'core/html',
 	);
 
-	$content = preg_replace( $patterns, '', $content );
+	if ( true === $allowed_block_types || ! is_array( $allowed_block_types ) ) {
+		$registered = WP_Block_Type_Registry::get_instance()->get_all_registered();
+		$allowed_block_types = array_keys( $registered );
+	}
 
-	return is_string( $content ) ? $content : '';
+	return array_values( array_diff( $allowed_block_types, $blocked ) );
 }
+add_filter( 'allowed_block_types_all', 'bloglogistics_lbwa_allowed_block_types' );
 
 /**
- * Remove media blocks and media HTML from limited writer content.
+ * Remove media HTML and common media blocks from post content.
  */
-function bloglogistics_lbwa_sanitize_limited_writer_content( string $content ): string {
-	if ( '' === trim( $content ) ) {
-		return $content;
-	}
+function bloglogistics_lbwa_strip_media_from_content( string $content ): string {
+	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed)[\s\S]*?\/wp:\1\s+-->#i', '', $content ) ?? $content;
+	$content = preg_replace( '#<!--\s+wp:(image|gallery|audio|video|file|media-text|embed)[^>]*?\/\s+-->#i', '', $content ) ?? $content;
+	$content = preg_replace( '#<(img|picture|source|video|audio|iframe|embed|object)\b[^>]*>.*?</\1>#is', '', $content ) ?? $content;
+	$content = preg_replace( '#<(img|source|embed)\b[^>]*\/?>#is', '', $content ) ?? $content;
 
-	if ( function_exists( 'has_blocks' ) && function_exists( 'parse_blocks' ) && function_exists( 'serialize_blocks' ) && has_blocks( $content ) ) {
-		$blocks  = parse_blocks( $content );
-		$content = serialize_blocks( bloglogistics_lbwa_remove_media_blocks_from_parsed_blocks( $blocks ) );
-	}
-
-	return bloglogistics_lbwa_strip_media_html( $content );
+	return $content;
 }
 
 /**
- * Force posts from limited writers to stay as Draft or Pending Review, and
- * remove media inserted through workarounds such as Insert from URL.
+ * Force posts from limited writers to stay as Draft or Pending Review and strip media workarounds.
  *
  * @param array<string, mixed> $data    Slashed post data.
  * @param array<string, mixed> $postarr Raw post array.
@@ -404,7 +453,15 @@ function bloglogistics_lbwa_sanitize_limited_writer_content( string $content ): 
 function bloglogistics_lbwa_force_pending_review_for_limited_writers( array $data, array $postarr ): array {
 	unset( $postarr );
 
-	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
+		return $data;
+	}
+
+	if ( current_user_can( 'manage_options' ) ) {
+		return $data;
+	}
+
+	if ( ! bloglogistics_lbwa_is_limited_writer() ) {
 		return $data;
 	}
 
@@ -417,7 +474,7 @@ function bloglogistics_lbwa_force_pending_review_for_limited_writers( array $dat
 	}
 
 	if ( isset( $data['post_content'] ) && is_string( $data['post_content'] ) ) {
-		$data['post_content'] = bloglogistics_lbwa_sanitize_limited_writer_content( $data['post_content'] );
+		$data['post_content'] = bloglogistics_lbwa_strip_media_from_content( $data['post_content'] );
 	}
 
 	return $data;
@@ -425,181 +482,194 @@ function bloglogistics_lbwa_force_pending_review_for_limited_writers( array $dat
 add_filter( 'wp_insert_post_data', 'bloglogistics_lbwa_force_pending_review_for_limited_writers', 10, 2 );
 
 /**
- * Remove media blocks from the block inserter for limited writers.
- *
- * @param bool|string[] $allowed_block_types Allowed block types.
- * @return bool|string[]
+ * Remove featured images saved by workarounds.
  */
-function bloglogistics_lbwa_restrict_allowed_block_types( $allowed_block_types ) {
-	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
-		return $allowed_block_types;
-	}
-
-	$blocked_blocks = bloglogistics_lbwa_blocked_media_blocks();
-
-	if ( true === $allowed_block_types ) {
-		if ( ! class_exists( 'WP_Block_Type_Registry' ) ) {
-			return $allowed_block_types;
-		}
-
-		$registered_blocks   = WP_Block_Type_Registry::get_instance()->get_all_registered();
-		$allowed_block_types = array_keys( $registered_blocks );
-	}
-
-	if ( ! is_array( $allowed_block_types ) ) {
-		return $allowed_block_types;
-	}
-
-	return array_values( array_diff( $allowed_block_types, $blocked_blocks ) );
-}
-add_filter( 'allowed_block_types_all', 'bloglogistics_lbwa_restrict_allowed_block_types' );
-
-/**
- * Add block editor JavaScript that unregisters media blocks and blocks common
- * Insert from URL image patterns before save.
- */
-function bloglogistics_lbwa_enqueue_block_editor_restrictions(): void {
-	if ( ! bloglogistics_lbwa_should_restrict_current_user() ) {
+function bloglogistics_lbwa_remove_featured_image_workarounds( int $post_id ): void {
+	if ( ! bloglogistics_lbwa_setting_enabled( 'limit_media_tools' ) ) {
 		return;
 	}
 
-	$blocked_blocks = wp_json_encode( bloglogistics_lbwa_blocked_media_blocks() );
-
-	if ( ! is_string( $blocked_blocks ) ) {
-		$blocked_blocks = '[]';
-	}
-
-	$script = "
-(function( wp ) {
-	if ( ! wp || ! wp.domReady || ! wp.blocks ) {
+	if ( wp_is_post_revision( $post_id ) || current_user_can( 'manage_options' ) || ! bloglogistics_lbwa_is_limited_writer() ) {
 		return;
 	}
 
-	wp.domReady( function() {
-		var blockedBlocks = {$blocked_blocks};
-
-		blockedBlocks.forEach( function( blockName ) {
-			if ( wp.blocks.getBlockType( blockName ) ) {
-				wp.blocks.unregisterBlockType( blockName );
-			}
-		} );
-
-		if ( wp.plugins && wp.plugins.unregisterPlugin ) {
-			wp.plugins.unregisterPlugin( 'editor-post-featured-image' );
-		}
-	} );
-})( window.wp );
-";
-
-	wp_add_inline_script( 'wp-blocks', $script, 'after' );
-	wp_add_inline_style(
-		'wp-edit-blocks',
-		'.editor-post-featured-image, .editor-post-featured-image__container, .components-panel__body:has(.editor-post-featured-image) { display: none !important; }'
-	);
+	delete_post_thumbnail( $post_id );
 }
-add_action( 'enqueue_block_editor_assets', 'bloglogistics_lbwa_enqueue_block_editor_restrictions' );
+add_action( 'save_post', 'bloglogistics_lbwa_remove_featured_image_workarounds', 20 );
 
 /**
- * Display a clear, read-only restrictions page for administrators.
+ * Check whether the shared BlogLogistics parent menu already exists.
  */
-function bloglogistics_lbwa_register_admin_visibility_page(): void {
-	add_options_page(
-		__( 'Limited Blog Access', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Limited Blog Access', 'bloglogistics-limited-blog-writing-access' ),
-		'manage_options',
-		BLOGLOGISTICS_LBWA_SLUG,
-		'bloglogistics_lbwa_render_admin_visibility_page'
-	);
-}
-add_action( 'admin_menu', 'bloglogistics_lbwa_register_admin_visibility_page' );
+function bloglogistics_lbwa_bloglogistics_menu_exists(): bool {
+	global $menu;
 
-/**
- * List the restrictions administrators should know are active.
- *
- * @return string[]
- */
-function bloglogistics_lbwa_admin_restriction_summary(): array {
-	return array(
-		__( 'Editors, Authors, and Contributors can log in and access wp-admin for writing posts.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Editors, Authors, and Contributors can create and edit blog articles only.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Media uploads are blocked for limited writers.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Media Library access is blocked for limited writers.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Image and media insertion through editor blocks, embeds, Featured Image, Site Logo, and Insert from URL workarounds is blocked and stripped on save.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Publishing is blocked for limited writers.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Limited writer content can only remain Draft or Pending Review.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Subscribers and other non-approved users are redirected away from wp-admin.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'Administrators remain unrestricted.', 'bloglogistics-limited-blog-writing-access' ),
-		__( 'The admin bar is hidden for non-administrators.', 'bloglogistics-limited-blog-writing-access' ),
-	);
-}
-
-/**
- * Render the admin visibility page.
- */
-function bloglogistics_lbwa_render_admin_visibility_page(): void {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( esc_html__( 'You do not have permission to access this page.', 'bloglogistics-limited-blog-writing-access' ) );
+	if ( ! is_array( $menu ) ) {
+		return false;
 	}
 
+	foreach ( $menu as $item ) {
+		if ( isset( $item[2] ) && 'bloglogistics' === $item[2] ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Render the shared BlogLogistics parent page.
+ */
+function bloglogistics_lbwa_render_bloglogistics_parent_page(): void {
 	?>
 	<div class="wrap">
-		<h1><?php esc_html_e( 'Limited Blog Access Restrictions', 'bloglogistics-limited-blog-writing-access' ); ?></h1>
-		<p><?php esc_html_e( 'This plugin is active and is enforcing the following rules:', 'bloglogistics-limited-blog-writing-access' ); ?></p>
-		<ul style="list-style: disc; padding-left: 1.5em;">
-			<?php foreach ( bloglogistics_lbwa_admin_restriction_summary() as $item ) : ?>
-				<li><?php echo esc_html( $item ); ?></li>
-			<?php endforeach; ?>
-		</ul>
-		<p><strong><?php esc_html_e( 'Note:', 'bloglogistics-limited-blog-writing-access' ); ?></strong> <?php esc_html_e( 'These settings are enforced by the plugin and are not configurable on this screen.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
+		<h1><?php echo esc_html__( 'BlogLogistics', 'bloglogistics-limited-blog-writing-access' ); ?></h1>
+		<p><?php echo esc_html__( 'Manage BlogLogistics plugin settings from the left sidebar.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
 	</div>
 	<?php
 }
 
 /**
- * Add a restrictions link on the Plugins screen.
- *
- * @param string[] $links Plugin action links.
- * @return string[]
+ * Register the shared parent menu if another BlogLogistics plugin has not already registered it.
  */
-function bloglogistics_lbwa_plugin_action_links( array $links ): array {
-	$restrictions_url = admin_url( 'options-general.php?page=' . BLOGLOGISTICS_LBWA_SLUG );
-	$restrictions     = '<a href="' . esc_url( $restrictions_url ) . '">' . esc_html__( 'Restrictions', 'bloglogistics-limited-blog-writing-access' ) . '</a>';
-
-	array_unshift( $links, $restrictions );
-
-	return $links;
-}
-add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'bloglogistics_lbwa_plugin_action_links' );
-
-/**
- * Add a dashboard widget so administrators can see what the plugin is doing
- * without relying on a persistent admin notice.
- */
-function bloglogistics_lbwa_register_dashboard_widget(): void {
-	if ( ! current_user_can( 'manage_options' ) ) {
+function bloglogistics_lbwa_register_bloglogistics_parent_menu(): void {
+	if ( bloglogistics_lbwa_bloglogistics_menu_exists() ) {
 		return;
 	}
 
-	wp_add_dashboard_widget(
-		'bloglogistics_lbwa_dashboard_widget',
-		__( 'Limited Blog Access', 'bloglogistics-limited-blog-writing-access' ),
-		'bloglogistics_lbwa_render_dashboard_widget'
+	add_menu_page(
+		__( 'BlogLogistics', 'bloglogistics-limited-blog-writing-access' ),
+		__( 'BlogLogistics', 'bloglogistics-limited-blog-writing-access' ),
+		'manage_options',
+		'bloglogistics',
+		'bloglogistics_lbwa_render_bloglogistics_parent_page',
+		'dashicons-rss',
+		58
 	);
 }
-add_action( 'wp_dashboard_setup', 'bloglogistics_lbwa_register_dashboard_widget' );
+add_action( 'admin_menu', 'bloglogistics_lbwa_register_bloglogistics_parent_menu', 9 );
 
 /**
- * Render administrator dashboard widget.
+ * Register this plugin's settings submenu.
  */
-function bloglogistics_lbwa_render_dashboard_widget(): void {
-	$restrictions_url = admin_url( 'options-general.php?page=' . BLOGLOGISTICS_LBWA_SLUG );
+function bloglogistics_lbwa_register_settings_page(): void {
+	add_submenu_page(
+		'bloglogistics',
+		__( 'Limited Blog Writing Access', 'bloglogistics-limited-blog-writing-access' ),
+		__( 'Limited Blog Writing Access', 'bloglogistics-limited-blog-writing-access' ),
+		'manage_options',
+		'bloglogistics-limited-blog-writing-access',
+		'bloglogistics_lbwa_render_settings_page'
+	);
+}
+add_action( 'admin_menu', 'bloglogistics_lbwa_register_settings_page', 20 );
+
+/**
+ * Render settings page.
+ */
+function bloglogistics_lbwa_render_settings_page(): void {
+	$settings = bloglogistics_lbwa_get_settings();
+	$message  = isset( $_GET['bloglogistics_lbwa_message'] ) ? sanitize_key( wp_unslash( $_GET['bloglogistics_lbwa_message'] ) ) : '';
 	?>
-	<p><?php esc_html_e( 'This site is limiting blog-writing access for Editors, Authors, and Contributors.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
-	<ul style="list-style: disc; padding-left: 1.5em;">
-		<li><?php esc_html_e( 'No uploads or Media Library access for limited writers.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
-		<li><?php esc_html_e( 'No image or media insertion workarounds, including Featured Image, Site Logo, and Insert from URL.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
-		<li><?php esc_html_e( 'No publishing, only Draft or Pending Review.', 'bloglogistics-limited-blog-writing-access' ); ?></li>
-	</ul>
-	<p><a class="button" href="<?php echo esc_url( $restrictions_url ); ?>"><?php esc_html_e( 'View all restrictions', 'bloglogistics-limited-blog-writing-access' ); ?></a></p>
+	<div class="wrap">
+		<h1><?php echo esc_html__( 'Limited Blog Writing Access', 'bloglogistics-limited-blog-writing-access' ); ?></h1>
+
+		<?php if ( 'saved' === $message ) : ?>
+			<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Settings saved.', 'bloglogistics-limited-blog-writing-access' ); ?></p></div>
+		<?php elseif ( 'defaults' === $message ) : ?>
+			<div class="notice notice-success is-dismissible"><p><?php echo esc_html__( 'Recommended defaults restored.', 'bloglogistics-limited-blog-writing-access' ); ?></p></div>
+		<?php endif; ?>
+
+		<p><?php echo esc_html__( 'These settings control what non-administrators and limited writing roles can do in wp-admin.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
+
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<?php wp_nonce_field( 'bloglogistics_lbwa_save_settings' ); ?>
+			<input type="hidden" name="action" value="bloglogistics_lbwa_save_settings" />
+
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><?php echo esc_html__( 'Limit wp-admin access for non-administrators', 'bloglogistics-limited-blog-writing-access' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="limit_admin_access" value="1" <?php checked( $settings['limit_admin_access'] ); ?> />
+							<?php echo esc_html__( 'Redirect other non-administrator users away from wp-admin and hide the admin bar for them.', 'bloglogistics-limited-blog-writing-access' ); ?>
+						</label>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php echo esc_html__( 'Keep limited writers away from media and publishing tools', 'bloglogistics-limited-blog-writing-access' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="limit_media_tools" value="1" <?php checked( $settings['limit_media_tools'] ); ?> />
+							<?php echo esc_html__( 'Allow limited writers to write posts, but block media access, image insertion, publishing, and related workarounds.', 'bloglogistics-limited-blog-writing-access' ); ?>
+						</label>
+						<p class="description"><?php echo esc_html__( 'This includes Media Library access, media uploads, the Media menu, Add Media, Featured Image, Site Logo, Insert from URL, media blocks, embeds, direct media HTML, and publishing attempts.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
+			<p><strong><?php echo esc_html__( 'Recommended defaults:', 'bloglogistics-limited-blog-writing-access' ); ?></strong></p>
+			<ul style="list-style: disc; margin-left: 1.5em;">
+				<li><?php echo esc_html__( 'Limit wp-admin access: On', 'bloglogistics-limited-blog-writing-access' ); ?></li>
+				<li><?php echo esc_html__( 'Keep limited writers away from media and publishing tools: On', 'bloglogistics-limited-blog-writing-access' ); ?></li>
+			</ul>
+
+			<?php submit_button( __( 'Save Settings', 'bloglogistics-limited-blog-writing-access' ) ); ?>
+		</form>
+
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<?php wp_nonce_field( 'bloglogistics_lbwa_restore_defaults' ); ?>
+			<input type="hidden" name="action" value="bloglogistics_lbwa_restore_defaults" />
+			<?php submit_button( __( 'Restore recommended defaults', 'bloglogistics-limited-blog-writing-access' ), 'secondary', 'submit', false ); ?>
+			<p class="description"><?php echo esc_html__( 'This turns both protections back on.', 'bloglogistics-limited-blog-writing-access' ); ?></p>
+		</form>
+	</div>
 	<?php
 }
+
+/**
+ * Save settings.
+ */
+function bloglogistics_lbwa_handle_save_settings(): void {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'You do not have permission to manage these settings.', 'bloglogistics-limited-blog-writing-access' ) );
+	}
+
+	check_admin_referer( 'bloglogistics_lbwa_save_settings' );
+
+	$settings = array(
+		'limit_admin_access' => isset( $_POST['limit_admin_access'] ),
+		'limit_media_tools'  => isset( $_POST['limit_media_tools'] ),
+	);
+
+	update_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, $settings, false );
+	update_option( BLOGLOGISTICS_LBWA_VERSION_OPTION, BLOGLOGISTICS_LBWA_VERSION, false );
+
+	if ( $settings['limit_media_tools'] ) {
+		bloglogistics_lbwa_apply_limited_writer_capabilities();
+	} else {
+		bloglogistics_lbwa_restore_builtin_writer_capabilities();
+	}
+
+	wp_safe_redirect( add_query_arg( 'bloglogistics_lbwa_message', 'saved', menu_page_url( 'bloglogistics-limited-blog-writing-access', false ) ) );
+	exit;
+}
+add_action( 'admin_post_bloglogistics_lbwa_save_settings', 'bloglogistics_lbwa_handle_save_settings' );
+
+/**
+ * Restore recommended defaults.
+ */
+function bloglogistics_lbwa_handle_restore_defaults(): void {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'You do not have permission to manage these settings.', 'bloglogistics-limited-blog-writing-access' ) );
+	}
+
+	check_admin_referer( 'bloglogistics_lbwa_restore_defaults' );
+
+	update_option( BLOGLOGISTICS_LBWA_SETTINGS_OPTION, bloglogistics_lbwa_default_settings(), false );
+	update_option( BLOGLOGISTICS_LBWA_VERSION_OPTION, BLOGLOGISTICS_LBWA_VERSION, false );
+	bloglogistics_lbwa_apply_limited_writer_capabilities();
+
+	wp_safe_redirect( add_query_arg( 'bloglogistics_lbwa_message', 'defaults', menu_page_url( 'bloglogistics-limited-blog-writing-access', false ) ) );
+	exit;
+}
+add_action( 'admin_post_bloglogistics_lbwa_restore_defaults', 'bloglogistics_lbwa_handle_restore_defaults' );

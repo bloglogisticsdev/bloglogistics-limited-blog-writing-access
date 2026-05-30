@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.0.7
+Stable tag: 1.1.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -12,39 +12,49 @@ Allows selected writing roles to create blog posts while preventing media access
 
 == Description ==
 
-BlogLogistics Limited Blog Writing Access allows Editors, Authors, and Contributors to access wp-admin for writing posts while preventing media access, media uploads, publishing, and broader administrative access.
+BlogLogistics Limited Blog Writing Access allows selected writing roles to access wp-admin for writing posts while preventing media access, media uploads, publishing, and broader administrative access.
 
 The plugin is intended for sites where some users need to draft or submit blog posts, but should not upload media, publish content, or access unrelated admin areas.
 
+Version 1.1.0 adds a settings page under the shared BlogLogistics wp-admin menu so administrators can turn the main protections on or off without editing code.
+
 == Features ==
 
-* Allows Editors, Authors, and Contributors to access wp-admin for writing posts.
-* Redirects other non-administrator users away from wp-admin.
-* Hides the admin bar for non-administrators.
-* Removes media upload and publishing capabilities from limited writing roles.
-* Blocks direct access to Media Library and media upload screens.
-* Removes the Media menu from wp-admin for limited writers.
-* Removes the Add Media button from the post editor for limited writers.
-* Blocks image and media insertion workarounds, including Featured Image, Site Logo, Insert from URL, media blocks, embeds, and direct media HTML.
-* Forces attempted published posts from limited writers to Pending Review.
+* Adds settings under BlogLogistics > Limited Blog Writing Access.
+* Redirects other non-administrator users away from wp-admin when enabled.
+* Hides the admin bar for non-administrators when enabled.
+* Removes media upload and publishing capabilities from limited writing roles when enabled.
+* Blocks direct access to Media Library and media upload screens when enabled.
+* Removes the Media menu from wp-admin for limited writers when enabled.
+* Removes the Add Media button from the post editor for limited writers when enabled.
+* Blocks common image and media insertion workarounds when enabled.
+* Forces attempted published posts from limited writers to Pending Review when enabled.
 * Includes runtime capability enforcement in case another plugin restores restricted capabilities.
-* Adds an administrator-only Settings page, Plugins screen link, and Dashboard widget explaining the active restrictions.
-* Includes GitHub release-based update support.
+* Cleans up plugin settings on uninstall.
+* Uses the BlogLogistics manifest-based update system.
 
 == Installation ==
 
 1. Upload the plugin folder to /wp-content/plugins/.
 2. Activate the plugin in WordPress.
-3. Confirm that Editors, Authors, and Contributors can access post writing screens.
-4. Confirm that limited writers cannot access Media Library, upload files, or publish posts.
+3. Go to BlogLogistics > Limited Blog Writing Access to review the settings.
+4. Confirm that Editors, Authors, and Contributors can access post writing screens.
+5. Confirm that limited writers cannot access Media Library, upload files, or publish posts when the media and publishing protection is enabled.
 
 == Usage ==
 
-After activation, Editors, Authors, and Contributors can access wp-admin to create and edit posts, but cannot upload media, access the Media Library, set Featured Images, insert Site Logo blocks, insert media through URL workarounds, or publish content.
+After activation, the recommended defaults are turned on automatically.
+
+Administrators can manage the settings at:
+
+BlogLogistics > Limited Blog Writing Access
+
+The two main settings are:
+
+* Limit wp-admin access for non-administrators.
+* Keep limited writers away from media and publishing tools.
 
 Administrators keep full access.
-
-Subscribers and other non-writing users are redirected away from wp-admin.
 
 == Frequently Asked Questions ==
 
@@ -56,28 +66,39 @@ Editors, Authors, and Contributors.
 
 Yes. Users with the manage_options capability keep full wp-admin access.
 
-= Can limited writers upload media? =
+= Are the protections turned on by default? =
 
-No. The plugin removes upload capabilities, blocks media screens, removes the Media menu, removes the Add Media button, removes Featured Image controls, removes media and Site Logo blocks from the editor, blocks Featured Image metadata, and strips media markup from saved limited-writer content.
+Yes. On first activation, the recommended defaults are turned on automatically.
 
-= Can limited writers publish posts? =
+= Can I turn the protections off? =
 
-No. If a limited writer somehow attempts to publish a post, the plugin forces the post to Pending Review.
+Yes. Go to BlogLogistics > Limited Blog Writing Access and turn off the setting you no longer want to apply.
+
+= What does “Limit wp-admin access for non-administrators” do? =
+
+It redirects other non-administrator users away from wp-admin and hides the admin bar for them.
+
+= What does “Keep limited writers away from media and publishing tools” do? =
+
+It allows limited writers to write posts, but blocks media access, image insertion, publishing, and related workarounds.
 
 = Does this plugin modify role capabilities? =
 
-Yes. On activation, it removes selected publishing and media capabilities from Editors, Authors, and Contributors. It also enforces these restrictions at runtime.
+When the media and publishing protection is turned on, the plugin removes selected media and publishing capabilities from the built-in writing roles and also enforces the same restrictions at runtime. When that protection is turned off, the plugin restores the normal built-in Editor and Author capabilities it previously restricted.
+
+= What is removed when the plugin is deleted? =
+
+The plugin removes its saved settings and version option. It does not delete users, posts, pages, or site content.
 
 == Changelog ==
 
-= 1.0.7 =
-* Block Featured Image controls and Featured Image metadata for limited writers.
-* Block Site Logo and Post Featured Image blocks for limited writers.
-* Update administrator visibility text to include Featured Image and Site Logo restrictions.
-
-= 1.0.6 =
-* Block image and media insertion workarounds for limited writers, including Insert from URL, media blocks, embeds, and direct media HTML.
-* Add an administrator-only Settings page, Plugins screen link, and Dashboard widget explaining the restrictions currently enforced by the plugin.
+= 1.1.0 =
+* Add settings under BlogLogistics > Limited Blog Writing Access.
+* Add toggles for wp-admin access protection and media/publishing restrictions.
+* Keep both protections turned on by default for existing behaviour.
+* Add restore recommended defaults action.
+* Restore normal built-in writing role capabilities when the media and publishing protection is turned off.
+* Add uninstall cleanup for plugin settings and version data.
 
 = 1.0.5 =
 * Automate update manifest generation and upload from GitHub Actions.
@@ -105,14 +126,8 @@ Yes. On activation, it removes selected publishing and media capabilities from E
 
 == Upgrade Notice ==
 
-= 1.0.7 =
-Blocks Featured Image and Site Logo image entry points for limited writers.
-
-= 1.0.6 =
-Blocks media insertion workarounds and adds administrator visibility for active restrictions.
-
-= 1.0.4 =
-Switches update checks to the BlogLogistics update manifest endpoint.
+= 1.1.0 =
+Adds settings under BlogLogistics > Limited Blog Writing Access while keeping the existing protections turned on by default.
 
 == License ==
 
