@@ -114,11 +114,17 @@ jobs:
 
           changelog_html = "".join(html_parts) if html_parts else "<p>No changelog available.</p>"
 
+          installation_html = """<ol><li>Upload and activate BlogLogistics Limited Blog Writing Access.</li><li>Go to <strong>BlogLogistics &gt; Limited Blog Writing Access</strong>.</li><li>Review the available protections and leave the recommended defaults on, or adjust the settings for the site.</li><li>Test with a limited writing role, such as Editor, Author, or Contributor, to confirm the expected wp-admin restrictions are active.</li></ol>"""
+
+          faq_html = """<h4>What does this plugin do?</h4><p>It helps limit what selected writing roles can access in wp-admin. It can restrict wp-admin access, media tools, publishing tools, comment moderation, and supported third-party content tools.</p><h4>Are the protections on by default?</h4><p>Yes. The recommended protections are turned on by default when the plugin is activated for the first time.</p><h4>Where are the settings?</h4><p>The settings are available under <strong>BlogLogistics &gt; Limited Blog Writing Access</strong>.</p><h4>Can administrators still access everything?</h4><p>Yes. The restrictions are designed for non-administrators and limited writing roles. Administrators keep normal access.</p><h4>What happens if I delete the plugin?</h4><p>The plugin removes its saved settings during uninstall. It does not delete posts, pages, users, or content.</p>"""
+
           manifest = {
               "name": plugin_name,
               "version": version,
               "download_url": download_url,
               "homepage": repo_url,
+              "author": "<a href=\"https://www.bloglogistics.com\" target=\"_blank\" rel=\"noopener noreferrer\">BlogLogistics</a>",
+              "author_profile": "https://www.bloglogistics.com",
               "requires": "7.0",
               "tested": "7.0",
               "requires_php": "8.3",
@@ -134,7 +140,9 @@ jobs:
                   "default": "https://updates.bloglogistics.com/plugins/assets/banner-772x250.png",
               },
               "sections": {
-                  "description": "Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, and broader wp-admin access.",
+                  "description": "Allows selected writing roles to create blog posts while preventing media access, uploads, publishing, comment moderation, and broader wp-admin access.",
+                  "installation": installation_html,
+                  "faq": faq_html,
                   "changelog": changelog_html,
               },
           }

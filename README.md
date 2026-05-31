@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -94,6 +94,10 @@ When the media and publishing protection is turned on, the plugin removes select
 The plugin removes its saved settings and version option. It does not delete users, posts, pages, or site content.
 
 == Changelog ==
+
+= 1.1.7 =
+* Add Installation and FAQ tab content to the plugin details modal.
+* Add linked BlogLogistics author metadata to the update manifest.
 
 = 1.1.6 =
 * Add banner metadata to the generated update manifest.
