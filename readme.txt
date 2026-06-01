@@ -4,7 +4,7 @@ Tags: roles, permissions, writing, contributors, admin access
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 1.1.7
+Stable tag: 1.2.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -16,7 +16,7 @@ BlogLogistics Limited Blog Writing Access allows selected writing roles to acces
 
 The plugin is intended for sites where some users need to draft or submit blog posts, but should not upload media, publish content, or access unrelated admin areas.
 
-Version 1.1.6 adds BlogLogistics plugin banner metadata for plugin details screens.
+Version 1.2.0 refactors the plugin bootstrap and adds bundled language files.
 
 == Features ==
 
@@ -94,6 +94,13 @@ When the media and publishing protection is turned on, the plugin removes select
 The plugin removes its saved settings and version option. It does not delete users, posts, pages, or site content.
 
 == Changelog ==
+
+= 1.2.0 =
+* Refactor the main plugin file into a bootstrap loader.
+* Move the main plugin class into the includes directory.
+* Add translation support and bundled language files.
+* Add language files for English Australia, English Great Britain, French, German, Spanish, Norwegian Bokmål, Swedish, and Japanese.
+* Add Domain Path metadata for bundled language files.
 
 = 1.1.7 =
 * Add Installation and FAQ tab content to the plugin details modal.

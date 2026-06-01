@@ -1,0 +1,80 @@
+msgid ""
+msgstr "Project-Id-Version: BlogLogistics Limited Blog Writing Access 1.2.0\\nReport-Msgid-Bugs-To: https://www.bloglogistics.com/\\nPOT-Creation-Date: 2026-06-01 20:56+0000\\nPO-Revision-Date: 2026-06-01 20:56+0000\\nLast-Translator: BlogLogistics <support@bloglogistics.com>\\nLanguage-Team: BlogLogistics\\nLanguage: nb_NO\\nMIME-Version: 1.0\\nContent-Type: text/plain; charset=UTF-8\\nContent-Transfer-Encoding: 8bit\\nX-Generator: BlogLogistics build helper\\n"
+
+msgid "BlogLogistics"
+msgstr "BlogLogistics"
+
+msgid "Manage BlogLogistics plugin settings from the left sidebar."
+msgstr "Administrer innstillingene for BlogLogistics-utvidelser fra venstre sidefelt."
+
+msgid "Limited Blog Writing Access"
+msgstr "Limited Blog Writing Access"
+
+msgid "Settings saved."
+msgstr "Innstillingene er lagret."
+
+msgid "Recommended defaults restored."
+msgstr "Anbefalte standardinnstillinger er gjenopprettet."
+
+msgid "These settings control what non-administrators and limited writing roles can do in wp-admin."
+msgstr "Disse innstillingene styrer hva ikke-administratorer og begrensede skriveroller kan gjøre i wp-admin."
+
+msgid "Limit wp-admin access for non-administrators"
+msgstr "Begrens wp-admin-tilgang for ikke-administratorer"
+
+msgid "Redirect other non-administrator users away from wp-admin and hide the admin bar for them."
+msgstr "Videresend andre ikke-administratorer bort fra wp-admin og skjul administratorlinjen for dem."
+
+msgid "Keep limited writers away from media and publishing tools"
+msgstr "Hold begrensede skribenter unna medier og publiseringsverktøy"
+
+msgid "Allow limited writers to write posts, but block media access, image insertion, publishing, and related workarounds."
+msgstr "La begrensede skribenter skrive innlegg, men blokker medietilgang, bildeinnsetting, publisering og relaterte omgåelser."
+
+msgid "This includes Media Library access, media uploads, the Media menu, Add Media, Featured Image, Site Logo, Insert from URL, media blocks, embeds, direct media HTML, and publishing attempts."
+msgstr "This includes Media Library access, media uploads, the Media menu, Add Media, Featured Image, Site Logo, Insert from URL, media blocks, embeds, direct media HTML, and publishing attempts."
+
+msgid "Keep limited writers away from comment moderation"
+msgstr "Hold begrensede skribenter unna kommentarmoderering"
+
+msgid "Remove Comments from wp-admin for limited writers and block direct access to comment moderation screens."
+msgstr "Remove Comments from wp-admin for limited writers and block direct access to comment moderation screens."
+
+msgid "If someone manually enters a comments URL, such as edit-comments.php, they are redirected back to the posts screen instead of seeing or moderating comments."
+msgstr "If someone manually enters a comments URL, such as edit-comments.php, they are redirected back to the posts screen instead of seeing or moderating comments."
+
+msgid "Hide Nelio Content tools from limited writers"
+msgstr "Skjul Nelio Content-verktøy for begrensede skribenter"
+
+msgid "Remove Nelio Content menu items from wp-admin for limited writers, including the Calendar item under Posts."
+msgstr "Remove Nelio Content menu items from wp-admin for limited writers, including the Calendar item under Posts."
+
+msgid "If someone manually enters a Nelio Content admin URL, they are redirected back to the Posts screen instead of seeing Nelio Content tools."
+msgstr "If someone manually enters a Nelio Content admin URL, they are redirected back to the Posts screen instead of seeing Nelio Content tools."
+
+msgid "Recommended defaults:"
+msgstr "Anbefalte standardinnstillinger:"
+
+msgid "Limit wp-admin access: On"
+msgstr "Limit wp-admin access: On"
+
+msgid "Keep limited writers away from media and publishing tools: On"
+msgstr "Keep limited writers away from media and publishing tools: On"
+
+msgid "Keep limited writers away from comment moderation: On"
+msgstr "Keep limited writers away from comment moderation: On"
+
+msgid "Hide Nelio Content tools from limited writers: On"
+msgstr "Hide Nelio Content tools from limited writers: On"
+
+msgid "Save Settings"
+msgstr "Lagre innstillinger"
+
+msgid "Restore recommended defaults"
+msgstr "Gjenopprett anbefalte standardinnstillinger"
+
+msgid "This turns all protections back on."
+msgstr "Dette slår alle beskyttelser på igjen."
+
+msgid "You do not have permission to manage these settings."
+msgstr "Du har ikke tillatelse til å administrere disse innstillingene."
