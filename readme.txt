@@ -35,6 +35,14 @@ Version 1.2.0 refactors the plugin bootstrap and adds bundled language files.
 * Cleans up plugin settings on uninstall.
 * Uses the BlogLogistics manifest-based update system.
 
+== BlogLogistics Service Usage Notice ==
+
+This plugin is licensed under GPL-3.0-or-later.
+
+This plugin is provided by BlogLogistics as part of an active hosting, maintenance, or site-management service, unless a separate service arrangement has been granted. If the website is moved to another provider, continued BlogLogistics service use, support, updates, configuration assistance, or replacement work may require a separate agreement.
+
+This notice does not restrict any rights granted under the GPL-3.0-or-later licence.
+
 == Installation ==
 
 1. Upload the plugin folder to /wp-content/plugins/.
@@ -92,6 +100,10 @@ When the media and publishing protection is turned on, the plugin removes select
 = What is removed when the plugin is deleted? =
 
 The plugin removes its saved settings and version option. It does not delete users, posts, pages, or site content.
+
+= Does this plugin continue to be covered by BlogLogistics service terms if the website moves to another provider? =
+
+This plugin is licensed under GPL-3.0-or-later. BlogLogistics service use, support, updates, configuration assistance, or replacement work may require an active BlogLogistics hosting, maintenance, or site-management service, or a separate agreement. This notice does not restrict any rights granted under the GPL-3.0-or-later licence.
 
 == Changelog ==
 
