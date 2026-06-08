@@ -73,50 +73,149 @@ jobs:
           readme_path = Path("readme.txt")
           readme = readme_path.read_text(encoding="utf-8", errors="replace")
 
-          changelog_match = re.search(
-              r"^==\s*Changelog\s*==\s*(.*?)(?=^==\s+|\Z)",
-              readme,
-              flags=re.IGNORECASE | re.MULTILINE | re.DOTALL,
-          )
+          def extract_readme_section(readme_text, section_name):
+              match = re.search(
+                  rf"^==\s*{re.escape(section_name)}\s*==\s*(.*?)(?=^==\s+|\Z)",
+                  readme_text,
+                  flags=re.IGNORECASE | re.MULTILINE | re.DOTALL,
+              )
+              return match.group(1).strip() if match else ""
 
-          changelog_text = changelog_match.group(1).strip() if changelog_match else ""
+          def convert_simple_readme_section_to_html(section_text):
+              html_parts = []
+              list_items = []
+              list_type = None
+              paragraph_lines = []
 
-          html_parts = []
-          current_items = []
+              def flush_paragraph():
+                  if paragraph_lines:
+                      paragraph = " ".join(line.strip() for line in paragraph_lines if line.strip())
+                      if paragraph:
+                          html_parts.append(f"<p>{html.escape(paragraph)}</p>")
+                      paragraph_lines.clear()
 
-          def flush_items():
-              nonlocal_items = list(current_items)
-              current_items.clear()
-              if nonlocal_items:
-                  html_parts.append("<ul>")
-                  for item in nonlocal_items:
-                      html_parts.append(f"<li>{html.escape(item)}</li>")
-                  html_parts.append("</ul>")
+              def flush_list():
+                  nonlocal list_type
+                  if list_items:
+                      tag = "ol" if list_type == "ol" else "ul"
+                      html_parts.append(f"<{tag}>")
+                      for item in list_items:
+                          html_parts.append(f"<li>{html.escape(item)}</li>")
+                      html_parts.append(f"</{tag}>")
+                      list_items.clear()
+                  list_type = None
 
-          for raw_line in changelog_text.splitlines():
-              line = raw_line.strip()
-              if not line:
-                  continue
+              for raw_line in section_text.splitlines():
+                  line = raw_line.strip()
 
-              version_heading = re.match(r"^=\s*(.*?)\s*=$", line)
-              if version_heading:
-                  flush_items()
-                  html_parts.append(f"<h4>{html.escape(version_heading.group(1))}</h4>")
-                  continue
+                  if not line:
+                      flush_paragraph()
+                      flush_list()
+                      continue
 
-              if line.startswith("*"):
-                  current_items.append(line.lstrip("*").strip())
-                  continue
+                  numbered_item = re.match(r"^\d+\.\s+(.*)$", line)
+                  bullet_item = re.match(r"^\*\s+(.*)$", line)
 
-              current_items.append(line)
+                  if numbered_item:
+                      flush_paragraph()
+                      if list_type not in (None, "ol"):
+                          flush_list()
+                      list_type = "ol"
+                      list_items.append(numbered_item.group(1).strip())
+                      continue
 
-          flush_items()
+                  if bullet_item:
+                      flush_paragraph()
+                      if list_type not in (None, "ul"):
+                          flush_list()
+                      list_type = "ul"
+                      list_items.append(bullet_item.group(1).strip())
+                      continue
 
-          changelog_html = "".join(html_parts) if html_parts else "<p>No changelog available.</p>"
+                  flush_list()
+                  paragraph_lines.append(line)
 
-          installation_html = """<ol><li>Upload and activate BlogLogistics Limited Blog Writing Access.</li><li>Go to <strong>BlogLogistics &gt; Limited Blog Writing Access</strong>.</li><li>Review the available protections and leave the recommended defaults on, or adjust the settings for the site.</li><li>Test with a limited writing role, such as Editor, Author, or Contributor, to confirm the expected wp-admin restrictions are active.</li></ol>"""
+              flush_paragraph()
+              flush_list()
 
-          faq_html = """<h4>What does this plugin do?</h4><p>It helps limit what selected writing roles can access in wp-admin. It can restrict wp-admin access, media tools, publishing tools, comment moderation, and supported third-party content tools.</p><h4>Are the protections on by default?</h4><p>Yes. The recommended protections are turned on by default when the plugin is activated for the first time.</p><h4>Where are the settings?</h4><p>The settings are available under <strong>BlogLogistics &gt; Limited Blog Writing Access</strong>.</p><h4>Can administrators still access everything?</h4><p>Yes. The restrictions are designed for non-administrators and limited writing roles. Administrators keep normal access.</p><h4>What happens if I delete the plugin?</h4><p>The plugin removes its saved settings during uninstall. It does not delete posts, pages, users, or content.</p>"""
+              return "".join(html_parts)
+
+          def convert_faq_to_html(faq_text):
+              html_parts = []
+              current_question = None
+              current_answer = []
+
+              def flush_question():
+                  nonlocal current_question, current_answer
+
+                  if not current_question:
+                      return
+
+                  answer_html = convert_simple_readme_section_to_html("\n".join(current_answer))
+                  html_parts.append(f"<h4>{html.escape(current_question)}</h4>")
+                  html_parts.append(answer_html if answer_html else "<p></p>")
+
+                  current_question = None
+                  current_answer = []
+
+              for raw_line in faq_text.splitlines():
+                  line = raw_line.strip()
+
+                  question_match = re.match(r"^=\s*(.*?)\s*=$", line)
+                  if question_match:
+                      flush_question()
+                      current_question = question_match.group(1).strip()
+                      current_answer = []
+                      continue
+
+                  if current_question:
+                      current_answer.append(raw_line)
+
+              flush_question()
+
+              return "".join(html_parts)
+
+          def convert_changelog_to_html(changelog_text):
+              html_parts = []
+              current_items = []
+
+              def flush_items():
+                  nonlocal_items = list(current_items)
+                  current_items.clear()
+                  if nonlocal_items:
+                      html_parts.append("<ul>")
+                      for item in nonlocal_items:
+                          html_parts.append(f"<li>{html.escape(item)}</li>")
+                      html_parts.append("</ul>")
+
+              for raw_line in changelog_text.splitlines():
+                  line = raw_line.strip()
+                  if not line:
+                      continue
+
+                  version_heading = re.match(r"^=\s*(.*?)\s*=$", line)
+                  if version_heading:
+                      flush_items()
+                      html_parts.append(f"<h4>{html.escape(version_heading.group(1))}</h4>")
+                      continue
+
+                  if line.startswith("*"):
+                      current_items.append(line.lstrip("*").strip())
+                      continue
+
+                  current_items.append(line)
+
+              flush_items()
+
+              return "".join(html_parts)
+
+          installation_text = extract_readme_section(readme, "Installation")
+          faq_text = extract_readme_section(readme, "Frequently Asked Questions")
+          changelog_text = extract_readme_section(readme, "Changelog")
+
+          installation_html = convert_simple_readme_section_to_html(installation_text) or "<p>No installation instructions available.</p>"
+          faq_html = convert_faq_to_html(faq_text) or "<p>No FAQ available.</p>"
+          changelog_html = convert_changelog_to_html(changelog_text) or "<p>No changelog available.</p>"
 
           manifest = {
               "name": plugin_name,
